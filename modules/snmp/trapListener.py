@@ -53,7 +53,7 @@ class TrapListener(Thread):
             reqMsg, wholeMsg = decoder.decode(
                 wholeMsg, asn1Spec=pMod.Message())
 
-            print('Notification message from %s:%s: ' %
+            print('\nNotification message from %s:%s: ' %
                   (transportDomain, transportAddress))
 
             reqPDU = pMod.apiMessage.getPDU(reqMsg)
@@ -77,11 +77,10 @@ class TrapListener(Thread):
 
                 mibViewController = TrapListener.mibViewController
                 for oid, val in varBinds:
-                    oid = ObjectIdentity(oid)
-                    oid.resolveWithMib(mibViewController)
+                    oid = ObjectIdentity(oid).resolveWithMib(mibViewController)
                     if isinstance(val, ObjectIdentifier):
-                        val = ObjectIdentity(val)
-                        val.resolveWithMib(mibViewController)
-                    print('%s = %s' % (oid.prettyPrint(), val.prettyPrint()))
+                        val = ObjectIdentity(val).resolveWithMib(mibViewController)
+                    print('  %s = %s' % (oid.prettyPrint(), val.prettyPrint()))
+                print('\n')
 
         return wholeMsg

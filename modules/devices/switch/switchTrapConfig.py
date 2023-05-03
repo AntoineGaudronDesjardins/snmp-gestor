@@ -11,6 +11,8 @@ from modules.utils import InstanceValue
 # There is an issue with BITS value processing with pysnmp
 mteEventActions = { 'notification': Bits('\x80'), 'set': Bits('\x40') }
 mteTriggerTest = { 'existence': Bits('\x80'), 'boolean': Bits('\x40'), 'threshold': Bits('\x20') }
+mteTriggerExistenceTest = { 'present': Bits('\x80'), 'absent': Bits('\x40'), 'changed': Bits('\x20') }
+mteTriggerExistenceStartup = { 'present': Bits('\x80'), 'absent': Bits('\x40') }
 
 
 ##########################################################################################
@@ -211,8 +213,8 @@ switchTrapConfig = {
             'mteTriggerName': 'InterfaceStatusUpdate'
         },
         'columns': {
-            'mteTriggerExistenceTest': 'changed',
-            'mteTriggerExistenceStartup': 'present',
+            'mteTriggerExistenceTest': mteTriggerExistenceTest['changed'],
+            'mteTriggerExistenceStartup': mteTriggerExistenceStartup['present'],
             'mteTriggerExistenceObjectsOwner': '',
             'mteTriggerExistenceObjects': '',
             'mteTriggerExistenceEventOwner': 'antoine',

@@ -1,12 +1,12 @@
 from modules.devices.switch.switchTrapConfig import switchTrapConfig
-from modules.devices.switch.credentials import switchCredentials
+from modules.devices.switch.credentials import credentials
 from modules.snmp import ManagedNode
 from modules.utils import InstanceValue
 
 
 class Switch(ManagedNode):
     def __init__(self, ipAddress):
-        ManagedNode.__init__(self, ipAddress, credentials=switchCredentials)
+        ManagedNode.__init__(self, ipAddress, credentials=credentials)
 
 
     def getHealthMetrics(self, format="default"):

@@ -3,6 +3,3 @@ __pycache__/
 
 # Ignore python virtual environment
 env/
-
-# Ignore credentials
-credentials.py

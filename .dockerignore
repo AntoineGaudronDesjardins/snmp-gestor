@@ -1,0 +1,10 @@
+.dockerignore
+.gitignore
+dockerfile
+README.md
+
+**/__pycache__/
+_pysnmp_example/
+env/
+mibs/
+!mibs/*.py

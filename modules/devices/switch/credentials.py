@@ -4,10 +4,10 @@ from pysnmp.hlapi import usmHMACMD5AuthProtocol, usmHMACSHAAuthProtocol, usmHMAC
 from pysnmp.hlapi import usmDESPrivProtocol, usm3DESEDEPrivProtocol, usmAesCfb128Protocol, usmAesCfb192Protocol, usmAesCfb256Protocol, usmNoPrivProtocol
 
 credentials = {
-    "username" : {
-        "authKey": "authenticationPassword",
-        "authProtocol": usmHMACMD5AuthProtocol,
-        "privKey": "privacyPassword",
-        "privProtocol": usmDESPrivProtocol,
+    "antoine" : {
+        "authKey": "password",
+        "authProtocol": usmHMACSHAAuthProtocol,
+        "privKey": "password",
+        "privProtocol": usmAesCfb128Protocol,
     },
 }
