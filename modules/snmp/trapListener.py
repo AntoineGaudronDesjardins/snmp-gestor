@@ -1,11 +1,17 @@
+from modules.utils import createMibViewController
+
 from pysnmp.carrier.asyncore.dispatch import AsyncoreDispatcher
 from pysnmp.carrier.asyncore.dgram import udp
+from pysnmp.smi.rfc1902 import ObjectIdentity
 from pyasn1.codec.ber import decoder
+from pyasn1.type.univ import ObjectIdentifier
 from pysnmp.proto import api
 from threading import Thread
 
 
 class TrapListener(Thread):
+    mibViewController = createMibViewController()
+
     def __init__(self, callback=None):
         Thread.__init__(self)
         self.transportDispatcher = AsyncoreDispatcher()
@@ -14,25 +20,24 @@ class TrapListener(Thread):
         self.transportDispatcher.registerRecvCbFun(callback)
         # In windows, set the server address as '' instead of 'localhost'
         transportAddress = udp.UdpSocketTransport().openServerMode(('', 162))
-        self.transportDispatcher.registerTransport(
-            udp.domainName, transportAddress)
+        self.transportDispatcher.registerTransport(udp.domainName, transportAddress)
 
     def run(self):
         print(f"Listening traps on port 162")
 
         self.transportDispatcher.jobStarted(1)
         try:
-            # Dispatcher will never finish as job#1 never reaches zero
+            # Dispatcher will not finish until job#1 finish
             self.transportDispatcher.runDispatcher()
         finally:
             self.transportDispatcher.closeDispatcher()
 
         print("Trap listener stopped")
 
+
     def stop(self):
         self.transportDispatcher.jobFinished(1)
-        # self.transportDispatcher.unregisterRecvCbFun(recvId=None)
-        # self.transportDispatcher.unregisterTransport(udp.domainName)
+
 
     def callbackFunction(transportDispatcher, transportDomain, transportAddress, wholeMsg):
 
@@ -70,7 +75,13 @@ class TrapListener(Thread):
 
                 print('Var-binds:')
 
+                mibViewController = TrapListener.mibViewController
                 for oid, val in varBinds:
+                    oid = ObjectIdentity(oid)
+                    oid.resolveWithMib(mibViewController)
+                    if isinstance(val, ObjectIdentifier):
+                        val = ObjectIdentity(val)
+                        val.resolveWithMib(mibViewController)
                     print('%s = %s' % (oid.prettyPrint(), val.prettyPrint()))
 
         return wholeMsg
