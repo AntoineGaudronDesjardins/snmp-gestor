@@ -11,8 +11,9 @@ RUN pip install -r requirements.txt
 
 
 
-FROM python:3.7 AS runtime
+FROM python:3.9.13 AS runtime
 
+RUN apt-get update && apt-get install -y iproute2 iputils-ping net-tools tcpdump nmap
 ENV PATH="/venv/bin:$PATH"
 COPY --from=build /venv /venv
 
