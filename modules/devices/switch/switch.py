@@ -1,7 +1,7 @@
 from modules.devices.switch.switchTrapConfig import switchTrapConfig
 from modules.devices.switch.credentials import credentials
 from modules.snmp import ManagedNode
-from modules.utils import InstanceValue
+from modules.utils import InstanceValue, Entry
 
 
 class Switch(ManagedNode):
@@ -25,38 +25,28 @@ class Switch(ManagedNode):
 
         def initDismanTable(tableName):
             for entry in switchTrapConfig[tableName]:
-                index, columns = entry['index'], entry['columns']
-                args = [column_value for column_value in columns.items()]
+                newRow = Entry(entry)
                 
-                entryStatusColumn = [column for column in columns.keys() if "EntryStatus" in column]
                 print("Checking for existing entry...")
-                existingRow = self.snmpEngine.getTable('DISMAN-EVENT-MIB', tableName, *columns, startIndex=index.values(), maxRepetitions=1, format="valueOID")[tableName]
+                existingRow = self.snmpEngine.getTable('DISMAN-EVENT-MIB', tableName, startIndex=newRow.index, maxRepetitions=1, format="valueOID")[tableName]
                 
-                if existingRow:
+                if existingRow and newRow.entryStatus:
+                    print("Deleting old entry...")
+                    self.snmpEngine.setTableRow('DISMAN-EVENT-MIB', newRow.index, (newRow.entryStatus, 'destroy'), auth="antoine")
 
-                    identical = True
-                    existingRow = existingRow[0]
-                    for column in columns:
-                        if columns[column] != existingRow[column]:
-                            identical = False
-                            break
-                        
-                    if identical:
-                        continue
-                    else:
-                        if len(entryStatusColumn) == 1:
-                            print("Deleting old entry...")
-                            self.snmpEngine.setTableRow('DISMAN-EVENT-MIB', index.values(), (entryStatusColumn[0], 'destroy'), auth="antoine")
-                
-                for i, varBind in enumerate(args):
-                    obj, val = varBind
-                    if val and isinstance(val, InstanceValue):
-                        args[i] = (obj, val.resolve(self.snmpEngine))
+                index, entry = newRow.resolve(self.snmpEngine)
+                if newRow.wildcarded:
+                    for ind, row in zip(index, entry):
+                        print(ind, row)
+                        newRow = self.snmpEngine.setTableRow('DISMAN-EVENT-MIB', ind, *row, auth="antoine")
+                        if not newRow: 
+                            print(f"Failed to create new entry in table {tableName}")
+                else:
+                    print("Creating new entry...")
+                    newRow = self.snmpEngine.setTableRow('DISMAN-EVENT-MIB', index, *entry, auth="antoine")
+                    if not newRow: 
+                        print(f"Failed to create new entry in table {tableName}")
 
-                print("Creating new entry...")
-                newRow = self.snmpEngine.setTableRow('DISMAN-EVENT-MIB', index.values(), *args, auth="antoine")
-                if not newRow: 
-                    print(f"Failed to create new entry in table {tableName}")
 
             print(f'Table {tableName} has been updated')
         

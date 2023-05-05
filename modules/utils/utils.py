@@ -52,30 +52,40 @@ def getTableColumns(mibViewController, mibName, tableName):
     return columns
 
 
-def formatter(mibViewController, *varBinds, format="default"):
+def formatter(mibViewController, varBinds, format):
     formatted = dict()
     for varBind in varBinds:
-        for name, value in varBind:
-            _, nameSymbol, _ = getMibSymbol(mibViewController, str(name))
+        name, value = varBind
+        _, nameSymbol, _ = getMibSymbol(mibViewController, str(name))
 
-            if format == "default":
-                formatted[name] = value
+        if format == "default":
+            formatted[name] = value
 
-            elif format == "symbol":
-                formatted[nameSymbol] = value
+        elif format == "pretty":
+            formatted[name.prettyPrint()] = value.prettyPrint()
 
-            elif format == "pretty":
+        elif format == "symbol":
+            if isinstance(value, ObjectIdentity):
+                _, valSymbol, _ = getMibSymbol(mibViewController, str(value))
+                formatted[nameSymbol] = valSymbol
+            else:
                 formatted[nameSymbol] = value.prettyPrint()
 
-            elif format == "valueOID":
-                if isinstance(value, ObjectIdentity):
-                    formatted[nameSymbol] = str(value)
-                else:
-                    formatted[nameSymbol] = value.prettyPrint()
-
-            elif format == "keyOID":
-                formatted[str(name)] = value
-                
+        elif format == "valueOID":
+            if isinstance(value, ObjectIdentity):
+                formatted[nameSymbol] = str(value)
             else:
-                return varBinds
+                formatted[nameSymbol] = value.prettyPrint()
+
+        elif format == "keyOID":
+            formatted[str(name)] = value
+
+        elif format == "OID":
+            if isinstance(value, ObjectIdentity):
+                formatted[str(name)] = str(value)
+            else:
+                formatted[str(name)] = value.prettyPrint()
+            
+        else:
+            return varBinds
     return formatted

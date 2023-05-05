@@ -310,7 +310,7 @@ switchTrapConfig = {
         },
         'columns': {
             'mteTriggerThresholdStartup': 'rising',
-            'mteTriggerThresholdRising': InstanceValue(hrStorageSize, lambda x: int(0.9 * x), wildcarded=True),
+            'mteTriggerThresholdRising': '60000',#InstanceValue(hrStorageSize, lambda x: int(0.9 * int(x)), wildcarded=True),
             'mteTriggerThresholdFalling': '0',
             'mteTriggerThresholdDeltaRising': '0',
             'mteTriggerThresholdDeltaFalling': '0',
