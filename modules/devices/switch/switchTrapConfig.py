@@ -6,7 +6,7 @@
 
 from pysnmp.proto.rfc1902 import Bits
 from modules.utils import createMibViewController, getOid
-from modules.utils import InstanceValue
+from modules.utils import Instance
 
 # There is an issue with BITS value processing with pysnmp
 mteEventActions = { 'notification': Bits('\x80'), 'set': Bits('\x40') }
@@ -126,14 +126,14 @@ switchTrapConfig = {
             'mteTriggerComment': 'Warning: Memory usage has reached a critical level!',
             'mteTriggerTest': mteTriggerTest['threshold'],
             'mteTriggerSampleType': 'absoluteValue',
-            'mteTriggerValueID': hrStorageUsed,
-            'mteTriggerValueIDWildcard': 'true',
+            'mteTriggerValueID': Instance(hrStorageUsed, wildcarded=True, oidFlag=True),
+            'mteTriggerValueIDWildcard': 'false',
             'mteTriggerTargetTag': '',
             'mteTriggerContextName': '',
             'mteTriggerContextNameWildcard': 'false',
             'mteTriggerFrequency': '10', # in seconds
-            'mteTriggerObjectsOwner': 'antoine',
-            'mteTriggerObjects': 'storageMetrics',
+            'mteTriggerObjectsOwner': '',
+            'mteTriggerObjects': '',
             'mteTriggerEnabled': 'true',
             'mteTriggerEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
         },
@@ -310,7 +310,7 @@ switchTrapConfig = {
         },
         'columns': {
             'mteTriggerThresholdStartup': 'rising',
-            'mteTriggerThresholdRising': '60000',#InstanceValue(hrStorageSize, lambda x: int(0.9 * int(x)), wildcarded=True),
+            'mteTriggerThresholdRising': Instance(hrStorageSize, lambda x: int(0.9 * int(x)), wildcarded=True),
             'mteTriggerThresholdFalling': '0',
             'mteTriggerThresholdDeltaRising': '0',
             'mteTriggerThresholdDeltaFalling': '0',
@@ -419,7 +419,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'interfacesMetrics',
-            'mteObjectsIndex': '1'
+            'mteObjectsIndex': '2'
         },
         'columns': {
             'mteObjectsID': ifOperStatus,

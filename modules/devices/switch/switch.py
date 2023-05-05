@@ -1,7 +1,7 @@
 from modules.devices.switch.switchTrapConfig import switchTrapConfig
 from modules.devices.switch.credentials import credentials
 from modules.snmp import ManagedNode
-from modules.utils import InstanceValue, Entry
+from modules.utils import Instance, Entry, getTableColumns
 
 
 class Switch(ManagedNode):
@@ -21,48 +21,63 @@ class Switch(ManagedNode):
         return healthMetrics
     
 
-    def initTraps(self):
+    def initTrapsConfig(self):
+        self.clearTrapsConfig()
 
         def initDismanTable(tableName):
             for entry in switchTrapConfig[tableName]:
                 newRow = Entry(entry)
-                
-                print("Checking for existing entry...")
-                existingRow = self.snmpEngine.getTable('DISMAN-EVENT-MIB', tableName, startIndex=newRow.index, maxRepetitions=1, format="valueOID")[tableName]
-                
-                if existingRow and newRow.entryStatus:
-                    print("Deleting old entry...")
-                    self.snmpEngine.setTableRow('DISMAN-EVENT-MIB', newRow.index, (newRow.entryStatus, 'destroy'), auth="antoine")
-
-                index, entry = newRow.resolve(self.snmpEngine)
-                if newRow.wildcarded:
-                    for ind, row in zip(index, entry):
-                        print(ind, row)
-                        newRow = self.snmpEngine.setTableRow('DISMAN-EVENT-MIB', ind, *row, auth="antoine")
-                        if not newRow: 
-                            print(f"Failed to create new entry in table {tableName}")
-                else:
+                newRow.resolve(self.snmpEngine)
+                for index, args in zip(newRow.indexes, newRow.args):
                     print("Creating new entry...")
-                    newRow = self.snmpEngine.setTableRow('DISMAN-EVENT-MIB', index, *entry, auth="antoine")
+                    newRow = self.snmpEngine.setTableRow('DISMAN-EVENT-MIB', index, *args, auth="antoine")
                     if not newRow: 
                         print(f"Failed to create new entry in table {tableName}")
-
 
             print(f'Table {tableName} has been updated')
         
         initDismanTable('mteObjectsTable')
+        initDismanTable('mteEventTable')
+        initDismanTable('mteEventNotificationTable')
+        initDismanTable('mteEventSetTable')
         initDismanTable('mteTriggerTable')
         initDismanTable('mteTriggerExistenceTable')
         initDismanTable('mteTriggerBooleanTable')
         initDismanTable('mteTriggerThresholdTable')
         initDismanTable('mteTriggerDeltaTable')
-        initDismanTable('mteEventTable')
-        initDismanTable('mteEventNotificationTable')
-        initDismanTable('mteEventSetTable')
 
-        for entry in switchTrapConfig['mteTriggerTable']:
-            self.snmpEngine.set('active', 'DISMAN-EVENT-MIB', 'mteTriggerEntryStatus', *entry["index"].values(), auth="antoine")
+        self.activateAllEntries()
+    
+
+    def clearTrapsConfig(self):
+
+        def clearDismanTable(tableName):
+            entryStatus = getTableColumns(self.snmpEngine.mibViewController, 'DISMAN-EVENT-MIB', tableName)[-1]
+            controlColumn = self.snmpEngine.getTable('DISMAN-EVENT-MIB', tableName, entryStatus)[tableName]
+
+            for entry in controlColumn:
+                print("Deleting entry...")
+                self.snmpEngine.setByOID('destroy', [*entry.keys()][0], auth="antoine")
+
+            print(f'Table {tableName} has been deleted')
         
-        for entry in switchTrapConfig['mteEventTable']:
-            self.snmpEngine.set('active', 'DISMAN-EVENT-MIB', 'mteEventEntryStatus', *entry["index"].values(), auth="antoine")
+        clearDismanTable('mteObjectsTable')
+        clearDismanTable('mteEventTable')
+        clearDismanTable('mteTriggerTable')
+    
+
+    def activateAllEntries(self):
+
+        def activateDismanTable(tableName):
+            entryStatus = getTableColumns(self.snmpEngine.mibViewController, 'DISMAN-EVENT-MIB', tableName)[-1]
+            controlColumn = self.snmpEngine.getTable('DISMAN-EVENT-MIB', tableName, entryStatus)[tableName]
+
+            for entry in controlColumn:
+                print("Activating entry...")
+                self.snmpEngine.setByOID('active', [*entry.keys()][0], auth="antoine")
+
+            print(f'Table {tableName} has been activated')
         
+        activateDismanTable('mteObjectsTable')
+        activateDismanTable('mteEventTable')
+        activateDismanTable('mteTriggerTable')

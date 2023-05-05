@@ -114,9 +114,14 @@ class SnmpEngine:
 
 
     def set(self, value, mibName, objectName, *instanceIdentifier, auth=None, format="default"):
+        oid = getOid(self.mibViewController, mibName, objectName, *instanceIdentifier, stringify=True)
+        return self.setByOID(value, oid, auth, format)
+
+
+    def setByOID(self, value, oid, auth=None, format="default"):
         sess = self._getSession(auth, rw=True)
 
-        instance = ObjectType(ObjectIdentity(mibName, objectName, *instanceIdentifier), value)
+        instance = ObjectType(ObjectIdentity(oid), value)
         iterator = setCmd(self.engine, sess, self.transport, self.context, instance)
 
         response = next(iterator)

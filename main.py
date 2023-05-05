@@ -6,14 +6,16 @@ from time import sleep
 def main():
     print("Starting app...")
     trapListener = TrapListener()
-    trapListener.start()
+    # trapListener.start()
     switch = Switch('192.168.31.10')
-    switch.initTraps()
+    # switch.clearTrapsConfig()
+    switch.initTrapsConfig()
     # print(switch.snmpEngine.walkByOID("1.3.6.1.2.1.2", format="symbol"))
     # print(switch.snmpEngine.walk("SNMPv2-MIB", "system", format="symbol"))
     # print(switch.getGlobalInfo(format="pretty"))
     # print(switch.getHealthMetrics(format="pretty"))
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerTable', format='pretty'))
+    # print(switch.snmpEngine.getByOID("1.3.6.1.2.1.25.2.3.1.6.1", format="pretty"))
     # while True:
     #     print(switch.snmpEngine.get('HOST-RESOURCES-MIB', 'hrSystemUptime', 0, format="pretty"))
     #     print(switch.snmpEngine.get('DISMAN-EVENT-MIB', 'sysUpTimeInstance', format="pretty"))
@@ -28,13 +30,21 @@ def main():
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerTable', startIndex=['antoine','MachineTooBusy'], maxRepetitions=1, format="pretty")['mteTriggerTable'])
     
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerTable', format="symbol")['mteTriggerTable'])
+    # print('\n')
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerDeltaTable', format="symbol")['mteTriggerDeltaTable'])
+    # print('\n')
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerExistenceTable', format="symbol")['mteTriggerExistenceTable'])
+    # print('\n')
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerBooleanTable', format="symbol")['mteTriggerBooleanTable'])
+    # print('\n')
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerThresholdTable', format="symbol")['mteTriggerThresholdTable'])
+    # print('\n')
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteObjectsTable', format="symbol")['mteObjectsTable'])
+    # print('\n')
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteEventTable', format="symbol")['mteEventTable'])
+    # print('\n')
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteEventNotificationTable', format="symbol")['mteEventNotificationTable'])
+    # print('\n')
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteEventSetTable', format="symbol")['mteEventSetTable'])
 
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteEventNotificationTable', format="symbol")['mteEventNotificationTable'])
@@ -45,7 +55,7 @@ def main():
     # print(switch.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteObjectsTable', startIndex=['antoine','healthGroup', '1'], format="pretty")['mteObjectsTable'])
     # trapListener.stop()
     # sleep(2)
-    trapListener.join()
+    # trapListener.join()
 
 
 if __name__ == "__main__":
