@@ -4,15 +4,14 @@
 ##########################################################################################
 ##########################################################################################
 
-from pysnmp.proto.rfc1902 import Bits
 from modules.utils import createMibViewController, getOid
-from modules.utils import Instance
+from modules.utils import Instance, NamedBits
 
-# There is an issue with BITS value processing with pysnmp
-mteEventActions = { 'notification': Bits('\x80'), 'set': Bits('\x40') }
-mteTriggerTest = { 'existence': Bits('\x80'), 'boolean': Bits('\x40'), 'threshold': Bits('\x20') }
-mteTriggerExistenceTest = { 'present': Bits('\x80'), 'absent': Bits('\x40'), 'changed': Bits('\x20') }
-mteTriggerExistenceStartup = { 'present': Bits('\x80'), 'absent': Bits('\x40') }
+# There is an issue with BITS value processing with pysnmp    
+mteEventActions = NamedBits({'notification': 0, 'set': 1})
+mteTriggerTest = NamedBits({'existence': 0, 'boolean': 1, 'threshold': 2})
+mteTriggerExistenceTest = NamedBits({'present': 0, 'absent': 1, 'changed': 2})
+mteTriggerExistenceStartup = NamedBits({'present': 0, 'absent': 1})
 
 
 ##########################################################################################

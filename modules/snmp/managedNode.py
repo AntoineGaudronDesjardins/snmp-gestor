@@ -5,7 +5,7 @@ class ManagedNode:
         self.snmpEngine = SnmpEngine(ipAddress, snmpReadCommunity, snmpWriteComunity, credentials)
         self.ipAddress = ipAddress
 
-    def getGlobalInfo(self, format="default"):
+    def getGlobalInfo(self, format="instSymbol.instIndex:valPretty"):
         globalInfo = dict()
         try:
             globalInfo.update(self.snmpEngine.get('SNMPv2-MIB', 'sysName', 0, format=format))
@@ -16,9 +16,9 @@ class ManagedNode:
         except:
             pass
 
-    def setLocation(self, descr, format="default"):
+    def setLocation(self, descr, format="instSymbol.instIndex:valPretty"):
         return self.snmpEngine.set(descr, 'SNMPv2-MIB', 'sysLocation', 0, format=format)
 
-    def setContact(self, descr, format="default"):
+    def setContact(self, descr, format="instSymbol.instIndex:valPretty"):
         return self.snmpEngine.set(descr, 'SNMPv2-MIB', 'sysContact', 0, format=format)
     

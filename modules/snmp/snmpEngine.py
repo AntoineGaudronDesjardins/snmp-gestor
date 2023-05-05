@@ -38,12 +38,12 @@ class SnmpEngine:
     ######################################################################################
     ################################## Request methods ###################################
     ######################################################################################
-    def get(self, mibName, objectName, *instanceIdentifier, auth=None, format="default"):
+    def get(self, mibName, objectName, *instanceIdentifier, auth=None, format="instSymbol.instIndex:valPretty"):
         oid = getOid(self.mibViewController, mibName, objectName, *instanceIdentifier, stringify=True)
         return self.getByOID(oid, auth, format)
         
     
-    def getByOID(self, oid, auth=None, format="default"):
+    def getByOID(self, oid, auth=None, format="instSymbol.instIndex:valPretty"):
         sess = self._getSession(auth, rw=False)
 
         instance = ObjectType(ObjectIdentity(oid))
@@ -53,12 +53,12 @@ class SnmpEngine:
         return self._extractResponse(response, format)
         
     
-    def getNext(self, mibName, objectName, *instanceIdentifier, auth=None, format="default"):
+    def getNext(self, mibName, objectName, *instanceIdentifier, auth=None, format="instSymbol.instIndex:valPretty"):
         oid = getOid(self.mibViewController, mibName, objectName, *instanceIdentifier, stringify=True)
         return self.getNextByOID(oid, auth, format)
         
     
-    def getNextByOID(self, oid, auth=None, format="default"):
+    def getNextByOID(self, oid, auth=None, format="instSymbol.instIndex:valPretty"):
         sess = self._getSession(auth, rw=False)
 
         initialObject = ObjectType(ObjectIdentity(oid))
@@ -68,7 +68,7 @@ class SnmpEngine:
         return self._extractResponse(response, format)
     
 
-    def getTable(self, mibName, tableName, *columns, startIndex=[], maxRepetitions=1000, auth=None, format="default"):
+    def getTable(self, mibName, tableName, *columns, startIndex=[], maxRepetitions=1000, auth=None, format="instSymbol.instIndex:valPretty"):
         sess = self._getSession(auth, rw=False)
 
         if not columns:
@@ -93,7 +93,7 @@ class SnmpEngine:
 
             if not varBinds: break
 
-            varBindsSymb = formatter(self.mibViewController, varBinds, format="symbol")
+            varBindsSymb = formatter(self.mibViewController, varBinds, format="instSymbol:")
             if not self._matchBaseOid(varBindsSymb.keys(), columns, symbol=True):
                 break
             else:
@@ -102,23 +102,23 @@ class SnmpEngine:
         return { tableName : [formatter(self.mibViewController, row, format=format) for row in result] }
     
 
-    def walk(self, mibName, objectName=None, *instanceIdentifier, auth=None, format="default"):
+    def walk(self, mibName, objectName=None, *instanceIdentifier, auth=None, format="instSymbol.instIndex:valPretty"):
         oid = getOid(self.mibViewController, mibName, objectName, *instanceIdentifier, stringify=True)
         return self.walkByOID(oid, auth, format)
     
 
-    def walkByOID(self, oid, auth=None, format="default"):
+    def walkByOID(self, oid, auth=None, format="instSymbol.instIndex:valPretty"):
         sess = self._getSession(auth, rw=False)
-        res, _ = self._walkRecursive(oid, sess, format=format)
+        res, _ = self._walkRecursive(oid, sess, format)
         return res
 
 
-    def set(self, value, mibName, objectName, *instanceIdentifier, auth=None, format="default"):
+    def set(self, value, mibName, objectName, *instanceIdentifier, auth=None, format="instSymbol.instIndex:valPretty"):
         oid = getOid(self.mibViewController, mibName, objectName, *instanceIdentifier, stringify=True)
         return self.setByOID(value, oid, auth, format)
 
 
-    def setByOID(self, value, oid, auth=None, format="default"):
+    def setByOID(self, value, oid, auth=None, format="instSymbol.instIndex:valPretty"):
         sess = self._getSession(auth, rw=True)
 
         instance = ObjectType(ObjectIdentity(oid), value)
@@ -128,7 +128,7 @@ class SnmpEngine:
         return self._extractResponse(response, format)
 
 
-    def setTableRow(self, mibName, index, *args, auth=None, format="default"):
+    def setTableRow(self, mibName, index, *args, auth=None, format="instSymbol.instIndex:valPretty"):
         sess = self._getSession(auth, rw=True)
         
         instances = [ObjectType(ObjectIdentity(mibName, column, *index), value) for column, value in args]        
@@ -171,10 +171,10 @@ class SnmpEngine:
         accessibleObjects = []
         for obj in args:
             objOID = str(getOid(self.mibViewController, mibName, obj))
-            res = self.getNext(mibName, obj, auth=auth)
+            res = self.getNext(mibName, obj, format="instOID:", auth=auth)
             if not res:
                 break
-            resObjOID = str([*res.keys()][0].getOid())
+            resObjOID = [*res.keys()][0]
             if resObjOID.startswith(objOID):
                 accessibleObjects.append(obj)
         return accessibleObjects
@@ -193,7 +193,7 @@ class SnmpEngine:
             return True
     
 
-    def _walkRecursive(self, oid, sess, format="default"):
+    def _walkRecursive(self, oid, sess, format):
         initialObject = ObjectType(ObjectIdentity(oid))
         iterator = nextCmd(self.engine, sess, self.transport, self.context, initialObject)
         response = next(iterator)
@@ -202,7 +202,7 @@ class SnmpEngine:
         if varBinds:
             _, initSymbol, _ = getMibSymbol(self.mibViewController, oid)
             _, resSymbol, _ = getMibSymbol(self.mibViewController, str(varBinds[0][0]))
-
+            
             if not str(varBinds[0][0]).startswith(oid):
                 return None, str(varBinds[0][0])
             
@@ -229,7 +229,7 @@ class SnmpEngine:
                 nextOid = ".".join(str(varBinds[0][0]).split(".")[:length+1])
                 lastOid = nextOid
                 while nextOid:
-                    subTree, lastOid = self._walkRecursive(nextOid, sess, format=format)
+                    subTree, lastOid = self._walkRecursive(nextOid, sess, format)
 
                     if subTree:
                         if isinstance(subTree, list):
