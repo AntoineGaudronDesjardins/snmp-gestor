@@ -623,7 +623,7 @@ switchTrapConfig = {
             'mteObjectsIndex': '1'
         },
         'columns': {
-            'mteObjectsID': ifInOctets,
+            'mteObjectsID': ifIndex,
             'mteObjectsIDWildcard': 'true',
             'mteObjectsEntryStatus': 'createAndGo',
         },
@@ -635,7 +635,7 @@ switchTrapConfig = {
             'mteObjectsIndex': '2'
         },
         'columns': {
-            'mteObjectsID': ifInUcastPkts,
+            'mteObjectsID': ifInOctets,
             'mteObjectsIDWildcard': 'true',
             'mteObjectsEntryStatus': 'createAndGo',
         },
@@ -647,7 +647,7 @@ switchTrapConfig = {
             'mteObjectsIndex': '3'
         },
         'columns': {
-            'mteObjectsID': ifInNUcastPkts,
+            'mteObjectsID': ifInUcastPkts,
             'mteObjectsIDWildcard': 'true',
             'mteObjectsEntryStatus': 'createAndGo',
         },
@@ -657,6 +657,18 @@ switchTrapConfig = {
             'mteOwner': 'antoine',
             'mteObjectsName': 'incommingTrafficMetrics',
             'mteObjectsIndex': '4'
+        },
+        'columns': {
+            'mteObjectsID': ifInNUcastPkts,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'incommingTrafficMetrics',
+            'mteObjectsIndex': '5'
         },
         'columns': {
             'mteObjectsID': ifInUnknownProtos,
@@ -671,7 +683,7 @@ switchTrapConfig = {
             'mteObjectsIndex': '1'
         },
         'columns': {
-            'mteObjectsID': ifOutOctets,
+            'mteObjectsID': ifIndex,
             'mteObjectsIDWildcard': 'true',
             'mteObjectsEntryStatus': 'createAndGo',
         },
@@ -683,7 +695,7 @@ switchTrapConfig = {
             'mteObjectsIndex': '2'
         },
         'columns': {
-            'mteObjectsID': ifOutUcastPkts,
+            'mteObjectsID': ifOutOctets,
             'mteObjectsIDWildcard': 'true',
             'mteObjectsEntryStatus': 'createAndGo',
         },
@@ -693,6 +705,18 @@ switchTrapConfig = {
             'mteOwner': 'antoine',
             'mteObjectsName': 'outgoingTrafficMetrics',
             'mteObjectsIndex': '3'
+        },
+        'columns': {
+            'mteObjectsID': ifOutUcastPkts,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'outgoingTrafficMetrics',
+            'mteObjectsIndex': '4'
         },
         'columns': {
             'mteObjectsID': ifOutNUcastPkts,

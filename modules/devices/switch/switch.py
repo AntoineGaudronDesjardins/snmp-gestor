@@ -5,20 +5,20 @@ from modules.snmp import ManagedNode
 
 
 class Switch(ManagedNode):
-    def __init__(self, ipAddress):
-        ManagedNode.__init__(self, ipAddress, credentials=credentials)
+    def __init__(self, ipAddress, name=""):
+        ManagedNode.__init__(self, ipAddress, credentials=credentials, name=name)
 
 
     ######################################################################################
     ################################ Information methods #################################
     ######################################################################################
-    def getHealthMetrics(self, format='instSymbol.instIndex:valPretty'):
+    def getHealthMetrics(self, format='instSymbol:valPretty'):
         healthMetrics = dict()
         # HOST-RESOURCES-MIB metrics
         healthMetrics.update(self.snmpEngine.get('HOST-RESOURCES-MIB', 'hrSystemUptime', 0, format=format))
         healthMetrics.update(self.snmpEngine.get('HOST-RESOURCES-MIB', 'hrSystemProcesses', 0, format=format))
         healthMetrics.update(self.snmpEngine.getTable('HOST-RESOURCES-MIB', 'hrStorageTable', 'hrStorageIndex', 'hrStorageUsed', format=format))
-        healthMetrics.update(self.snmpEngine.getTable('HOST-RESOURCES-MIB', 'hrProcessorTable', 'hrProcessorFrwID', 'hrProcessorLoad', format=format))
+        healthMetrics.update(self.snmpEngine.getTable('HOST-RESOURCES-MIB', 'hrProcessorTable', 'hrProcessorFrwID', 'hrProcessorLoad', format='instSymbol:valSymbol'))
         # IF-MIB metrics
         healthMetrics.update(self.snmpEngine.getTable('IF-MIB', 'ifTable', 'ifIndex', 'ifOperStatus', 'ifLastChange', format=format))
         return healthMetrics

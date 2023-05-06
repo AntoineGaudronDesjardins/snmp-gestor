@@ -1,25 +1,25 @@
-from modules.utils import createMibViewController
+from modules.utils import createMibViewController, formatter
 
 from pysnmp.carrier.asyncore.dispatch import AsyncoreDispatcher
 from pysnmp.carrier.asyncore.dgram import udp
-from pysnmp.smi.rfc1902 import ObjectIdentity
-from pyasn1.codec.ber import decoder
-from pyasn1.type.univ import ObjectIdentifier
-from pysnmp.proto import api
+from pyasn1.codec.ber.decoder import decode
+from pysnmp.proto.api import decodeMessageVersion, protoModules, protoVersion1
 from threading import Thread
 
 
 class TrapListener(Thread):
     mibViewController = createMibViewController()
 
-    def __init__(self, callback=None):
+    def __init__(self, callback=None, bot=None):
         Thread.__init__(self)
-        self.transportDispatcher = AsyncoreDispatcher()
         if not callback:
-            callback = TrapListener.callbackFunction
-        self.transportDispatcher.registerRecvCbFun(callback)
+            callback = self.callbackFunction
         # In windows, set the server address as '' instead of 'localhost'
         transportAddress = udp.UdpSocketTransport().openServerMode(('', 162))
+
+        self.bot = bot
+        self.transportDispatcher = AsyncoreDispatcher()
+        self.transportDispatcher.registerRecvCbFun(callback)
         self.transportDispatcher.registerTransport(udp.domainName, transportAddress)
 
     def run(self):
@@ -27,7 +27,6 @@ class TrapListener(Thread):
 
         self.transportDispatcher.jobStarted(1)
         try:
-            # Dispatcher will not finish until job#1 finish
             self.transportDispatcher.runDispatcher()
         finally:
             self.transportDispatcher.closeDispatcher()
@@ -39,26 +38,25 @@ class TrapListener(Thread):
         self.transportDispatcher.jobFinished(1)
 
 
-    def callbackFunction(transportDispatcher, transportDomain, transportAddress, wholeMsg):
+    def callbackFunction(self, _, transportDomain, transportAddress, msg):
 
-        while wholeMsg:
+        while msg:
 
-            msgVersion = int(api.decodeMessageVersion(wholeMsg))
-            if msgVersion in api.protoModules:
-                pMod = api.protoModules[msgVersion]
+            msgVersion = int(decodeMessageVersion(msg))
+            if msgVersion in protoModules:
+                pMod = protoModules[msgVersion]
             else:
                 print('Unsupported SNMP version %s' % msgVersion)
                 return
 
-            reqMsg, wholeMsg = decoder.decode(
-                wholeMsg, asn1Spec=pMod.Message())
+            reqMsg, msg = decode(msg, asn1Spec=pMod.Message())
 
             print('\nNotification message from %s:%s: ' %
                   (transportDomain, transportAddress))
 
             reqPDU = pMod.apiMessage.getPDU(reqMsg)
             if reqPDU.isSameTypeWith(pMod.TrapPDU()):
-                if msgVersion == api.protoVersion1:
+                if msgVersion == protoVersion1:
                     print('Enterprise: %s' %
                           (pMod.apiTrapPDU.getEnterprise(reqPDU).prettyPrint()))
                     print('Agent Address: %s' %
@@ -74,13 +72,12 @@ class TrapListener(Thread):
                     varBinds = pMod.apiPDU.getVarBinds(reqPDU)
 
                 print('Var-binds:')
-
-                mibViewController = TrapListener.mibViewController
-                for oid, val in varBinds:
-                    oid = ObjectIdentity(oid).resolveWithMib(mibViewController)
-                    if isinstance(val, ObjectIdentifier):
-                        val = ObjectIdentity(val).resolveWithMib(mibViewController)
-                    print('  %s = %s' % (oid.prettyPrint(), val.prettyPrint()))
+                formattedVarBinds = formatter(self.mibViewController, varBinds, format='instPretty,valPretty')
+                for oid, val in formattedVarBinds:
+                    print('  %s = %s' % (oid, val))
                 print('\n')
 
-        return wholeMsg
+                if self.bot:
+                    self.bot.forwardTrap(transportAddress[0], varBinds)
+
+        return msg

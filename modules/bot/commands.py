@@ -1,0 +1,2 @@
+def getRegisteredDevices():
+    pass

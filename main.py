@@ -1,16 +1,23 @@
 from modules.devices import Switch
 from modules.snmp import TrapListener
+from modules.bot import Bot
+from conf import TOKEN
 from time import sleep
 
 
 def main():
     print("Starting app...")
-    trapListener = TrapListener()
-    # trapListener.start()
-    switch = Switch('192.168.31.10')
+    # Declare monitored devices
+    switch = Switch('192.168.31.10', name="switch - 2C")
+    # Initalize bot and trap listener
+    bot = Bot(TOKEN)
+    bot.addMonitoredDevices(switch)
+    trapListener = TrapListener(bot=bot)
+    trapListener.start()
+    trapListener.join()
     # switch.resetTrapConfig()
-    print(switch.getTriggers())
-    print(switch.getEvents())
+    # print(switch.getTriggers())
+    # print(switch.getEvents())
     # print(switch.snmpEngine.walkByOID("1.3.6.1.2.1.2", format="instSymbol:valPretty"))
     # print(switch.snmpEngine.walk("SNMPv2-MIB", "system", format="instSymbol:valPretty"))
     # print(switch.getGlobalInfo(format="instPretty:valPretty"))
