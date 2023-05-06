@@ -8,7 +8,7 @@ def main():
     trapListener = TrapListener()
     # trapListener.start()
     switch = Switch('192.168.31.10')
-    switch.resetTrapConfig()
+    # switch.resetTrapConfig()
     print(switch.getTriggers())
     print(switch.getEvents())
     # print(switch.snmpEngine.walkByOID("1.3.6.1.2.1.2", format="instSymbol:valPretty"))

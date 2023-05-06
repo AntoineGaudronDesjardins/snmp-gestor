@@ -161,7 +161,7 @@ class SnmpEngine:
             print(errorIndication)
             return
         elif errorStatus:
-            print('%s at %s' % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
+            print('%s at %s' % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0].prettyPrint() or '?'))
             return
         
         return formatter(self.mibViewController, varBinds, format=format)

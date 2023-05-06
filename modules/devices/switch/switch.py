@@ -42,7 +42,7 @@ class Switch(ManagedNode):
 
             if all or bool(enabled):
                 trigger, testConfig, eventConfig, _ = self.getTrigger(index)
-                if all or eventConfig['event']['mteEventEnabled']:
+                if all or (isinstance(eventConfig, list) and (eventConfig[0]['mteEventEnabled'] or eventConfig[1]['mteEventEnabled'])) or ((not isinstance(eventConfig, list)) and eventConfig['mteEventEnabled']):
                     result.append({'index': index,'trigger': trigger, 'testConfig': testConfig, 'eventConfig': eventConfig})
 
         return result
@@ -53,7 +53,7 @@ class Switch(ManagedNode):
 
         result = []
         for entry in indexes:
-            index, enabled = entry
+            index, enabled = entry[0]
             if all or bool(enabled):
                 result.append(self.getEvent(index))
 
@@ -65,27 +65,38 @@ class Switch(ManagedNode):
         testConfig, eventIndex = self._getTriggerTest(trigger['mteTriggerTest'], trigger['mteTriggerSampleType'], index)
 
         if isinstance(eventIndex[0], list):
-            eventConfig = []
-            for eventInd in eventIndex:
-                eventConfig.append(self.getEvent(eventInd))
+            if eventIndex[0] == eventIndex[1]:
+                eventConfig = self.getEvent(eventIndex[0])
+            else:
+                eventConfig = []
+                for eventInd in eventIndex:
+                    eventConfig.append(self.getEvent(eventInd))
         else:
             eventConfig = self.getEvent(eventIndex)
         return trigger, testConfig, eventConfig, eventIndex
 
     
     def getEvent(self, index):
-        return { 'index': index, 'event': self.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteEventTable', 'mteEventComment', 'mteEventEnabled', startIndex=index, maxRepetitions=1, format="instSymbol:valPretty")['mteEventTable'][0] }
+        return self.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteEventTable', 'mteEventComment', 'mteEventEnabled', startIndex=index, maxRepetitions=1, format="instSymbol:valPretty")['mteEventTable'][0]
 
 
     def enableTrigger(self, index):
         self.snmpEngine.set('true', 'DISMAN-EVENT-MIB', 'mteTriggerEnabled', *index, auth='antoine')
         _, _, eventConfig, eventIndex = self.getTrigger(index)
-        if not eventConfig['mteEventEnabled']:
+        if isinstance(eventConfig, list):
+            for i, conf in enumerate(eventConfig):
+                if not conf['mteEventEnabled']:
+                    self.enableEvent(eventIndex[i])
+        elif not eventConfig['mteEventEnabled']:
             self.enableEvent(eventIndex)
 
 
     def enableEvent(self, index):
         self.snmpEngine.set('true', 'DISMAN-EVENT-MIB', 'mteEventEnabled', *index, auth='antoine')
+    
+
+    def enableAuthenticationFailureTrap(self):
+        self.snmpEngine.set('enabled', 'SNMPv2-MIB', 'snmpEnableAuthenTraps', 0, auth='antoine')
 
 
     def disableTrigger(self, index):
@@ -94,6 +105,10 @@ class Switch(ManagedNode):
 
     def disableEvent(self, index):
         self.snmpEngine.set('false', 'DISMAN-EVENT-MIB', 'mteEventEnabled', *index, auth='antoine')
+    
+
+    def disableAuthenticationFailureTrap(self):
+        self.snmpEngine.set('disabled', 'SNMPv2-MIB', 'snmpEnableAuthenTraps', 0, auth='antoine')
 
 
     ######################################################################################
