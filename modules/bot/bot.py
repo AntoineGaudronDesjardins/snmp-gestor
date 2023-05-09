@@ -6,7 +6,8 @@ from telepot.namedtuple import InlineQueryResultArticle, InputTextMessageContent
 from threading import Thread
 from time import sleep
 
-from modules.utils import formatter, createMibViewController, printableTable
+from modules.utils import formatter, createMibViewController
+from modules.snmp import Table, MibNode
 
 
 class Bot(Thread):
@@ -67,7 +68,7 @@ class Bot(Thread):
                 
 
                 # Send the table as a message using Markdown formatting
-                self.bot.sendMessage(chat_id, table, parse_mode='MarkdownV2')
+                # self.bot.sendMessage(chat_id, table, parse_mode='MarkdownV2')
                 pass
 
             elif cmd == '/events':
@@ -122,14 +123,8 @@ class Bot(Thread):
             
             respText = f'*__Actividad de {printableName}__* \n\n'
             metrics = device.getHealthMetrics()
-            for obj, val in metrics.items():
-                if isinstance(val, str):
-                    respText = respText + f" {obj} \= {val} \n\n"
-                elif isinstance(val, list):
-                    if len(val) > 1:
-                        respText = respText + f" _{obj}_ : \n" + printableTable(val) + "\n\n"
-                    elif len(val) == 1:
-                        respText = respText + f" _{obj}_ : \n" + "\n".join([f"  ```{key}``` \= ```{value}```" for key, value in val[0].items()]) + "\n\n"
+            for obj in metrics.items():
+                respText = respText + obj
 
             keyBoard = [[InlineKeyboardButton(text="<< volver", callback_data=f"ip&{ip}")]]
             keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)

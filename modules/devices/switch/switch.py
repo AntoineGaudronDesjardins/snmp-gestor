@@ -1,26 +1,26 @@
 from modules.devices.switch.switchTrapConfig import switchTrapConfig, mteTriggerTest
-from modules.devices.switch.credentials import credentials
-from modules.utils import Entry, getTableColumns
-from modules.snmp import ManagedNode
+from modules.snmp import ManagedNode, Table, MibNode
+from modules.utils import Entry
+from conf import switchCredentials
 
 
 class Switch(ManagedNode):
-    def __init__(self, ipAddress, name=""):
-        ManagedNode.__init__(self, ipAddress, credentials=credentials, name=name)
+    def __init__(self, ipAddress):
+        ManagedNode.__init__(self, ipAddress, credentials=switchCredentials)
 
 
     ######################################################################################
     ################################ Information methods #################################
     ######################################################################################
-    def getHealthMetrics(self, format='instSymbol:valPretty'):
-        healthMetrics = dict()
+    def getHealthMetrics(self):
+        healthMetrics = []
         # HOST-RESOURCES-MIB metrics
-        healthMetrics.update(self.snmpEngine.get('HOST-RESOURCES-MIB', 'hrSystemUptime', 0, format=format))
-        healthMetrics.update(self.snmpEngine.get('HOST-RESOURCES-MIB', 'hrSystemProcesses', 0, format=format))
-        healthMetrics.update(self.snmpEngine.getTable('HOST-RESOURCES-MIB', 'hrStorageTable', 'hrStorageIndex', 'hrStorageUsed', format=format))
-        healthMetrics.update(self.snmpEngine.getTable('HOST-RESOURCES-MIB', 'hrProcessorTable', 'hrProcessorFrwID', 'hrProcessorLoad', format='instSymbol:valSymbol'))
+        healthMetrics.append(MibNode(self.snmpEngine, ('HOST-RESOURCES-MIB', 'hrSystemUptime', 0)).get())
+        healthMetrics.append(MibNode(self.snmpEngine, ('HOST-RESOURCES-MIB', 'hrSystemProcesses', 0)).get())
+        healthMetrics.append(Table(self.snmpEngine, 'HOST-RESOURCES-MIB', 'hrStorageTable').pullData('hrStorageIndex', 'hrStorageUsed'))
+        healthMetrics.append(Table(self.snmpEngine, 'HOST-RESOURCES-MIB', 'hrProcessorTable').pullData('hrProcessorFrwID', 'hrProcessorLoad'))
         # IF-MIB metrics
-        healthMetrics.update(self.snmpEngine.getTable('IF-MIB', 'ifTable', 'ifIndex', 'ifOperStatus', 'ifLastChange', format=format))
+        healthMetrics.append(Table(self.snmpEngine, 'IF-MIB', 'ifTable').pullData('ifIndex', 'ifOperStatus', 'ifLastChange'))
         return healthMetrics
 
     
@@ -34,81 +34,43 @@ class Switch(ManagedNode):
 
 
     def getTriggers(self, all=False):
-        indexes = self.snmpEngine.walk('DISMAN-EVENT-MIB', 'mteTriggerEnabled', format='instIndex,valPretty')
-
-        result = []
-        for entry in indexes:
-            index, enabled = entry[0]
-
-            if all or bool(enabled):
-                trigger, testConfig, eventConfig, _ = self.getTrigger(index)
-                if all or (isinstance(eventConfig, list) and (eventConfig[0]['mteEventEnabled'] or eventConfig[1]['mteEventEnabled'])) or ((not isinstance(eventConfig, list)) and eventConfig['mteEventEnabled']):
-                    result.append({'index': index,'trigger': trigger, 'testConfig': testConfig, 'eventConfig': eventConfig})
-
-        return result
+        return Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteTriggerTable').pullData('mteTriggerComment', 'mteTriggerTest', 'mteTriggerSampleType', 'mteTriggerValueID', 'mteTriggerEnabled')
 
 
     def getEvents(self, all=True):
-        indexes = self.snmpEngine.walk('DISMAN-EVENT-MIB', 'mteEventEnabled', format='instIndex,valPretty')
-
-        result = []
-        for entry in indexes:
-            index, enabled = entry[0]
-            if all or bool(enabled):
-                result.append(self.getEvent(index))
-
-        return result
+        return Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteEventTable').pullData('mteEventComment', 'mteEventEnabled')
 
 
     def getTrigger(self, index):
-        trigger = self.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerTable', 'mteTriggerComment', 'mteTriggerTest', 'mteTriggerSampleType', 'mteTriggerValueID', 'mteTriggerEnabled', startIndex=index, maxRepetitions=1, format="instSymbol:valPretty")['mteTriggerTable'][0]
-        testConfig, eventIndex = self._getTriggerTest(trigger['mteTriggerTest'], trigger['mteTriggerSampleType'], index)
-
-        if isinstance(eventIndex[0], list):
-            if eventIndex[0] == eventIndex[1]:
-                eventConfig = self.getEvent(eventIndex[0])
-            else:
-                eventConfig = []
-                for eventInd in eventIndex:
-                    eventConfig.append(self.getEvent(eventInd))
-        else:
-            eventConfig = self.getEvent(eventIndex)
-        return trigger, testConfig, eventConfig, eventIndex
-
+        return Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteTriggerTable').pullData('mteTriggerComment', 'mteTriggerTest', 'mteTriggerSampleType', 'mteTriggerValueID', 'mteTriggerEnabled', startIndex=index, maxRepetitions=1)
+    
     
     def getEvent(self, index):
-        return self.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteEventTable', 'mteEventComment', 'mteEventEnabled', startIndex=index, maxRepetitions=1, format="instSymbol:valPretty")['mteEventTable'][0]
+        return Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteEventTable').pullData('mteEventComment', 'mteEventEnabled', startIndex=index, maxRepetitions=1)
 
 
     def enableTrigger(self, index):
-        self.snmpEngine.set('true', 'DISMAN-EVENT-MIB', 'mteTriggerEnabled', *index, auth='antoine')
-        _, _, eventConfig, eventIndex = self.getTrigger(index)
-        if isinstance(eventConfig, list):
-            for i, conf in enumerate(eventConfig):
-                if not conf['mteEventEnabled']:
-                    self.enableEvent(eventIndex[i])
-        elif not eventConfig['mteEventEnabled']:
-            self.enableEvent(eventIndex)
+        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteTriggerEnabled', index)).set('true', auth='antoine')
 
 
     def enableEvent(self, index):
-        self.snmpEngine.set('true', 'DISMAN-EVENT-MIB', 'mteEventEnabled', *index, auth='antoine')
+        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteEventEnabled', *index)).set('true', auth='antoine')
     
 
     def enableAuthenticationFailureTrap(self):
-        self.snmpEngine.set('enabled', 'SNMPv2-MIB', 'snmpEnableAuthenTraps', 0, auth='antoine')
+        MibNode(self.snmpEngine, ('SNMPv2-MIB', 'snmpEnableAuthenTraps', 0)).set('enabled', auth='antoine')
 
 
     def disableTrigger(self, index):
-        self.snmpEngine.set('false', 'DISMAN-EVENT-MIB', 'mteTriggerEnabled', *index, auth='antoine')
+        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteTriggerEnabled', *index)).set('false', auth='antoine')
 
 
     def disableEvent(self, index):
-        self.snmpEngine.set('false', 'DISMAN-EVENT-MIB', 'mteEventEnabled', *index, auth='antoine')
+        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteEventEnabled', *index)).set('false', auth='antoine')
     
 
     def disableAuthenticationFailureTrap(self):
-        self.snmpEngine.set('disabled', 'SNMPv2-MIB', 'snmpEnableAuthenTraps', 0, auth='antoine')
+        MibNode(self.snmpEngine, ('SNMPv2-MIB', 'snmpEnableAuthenTraps', 0)).set('disabled', auth='antoine')
 
 
     ######################################################################################
@@ -117,13 +79,14 @@ class Switch(ManagedNode):
     def _setTrapConfig(self):
 
         def initDismanTable(tableName):
+            table = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', tableName)
             for entry in switchTrapConfig[tableName]:
                 newRow = Entry(entry)
                 newRow.resolve(self.snmpEngine)
 
-                for index, args in zip(newRow.indexes, newRow.args):
+                for index, varBinds in zip(newRow.indexes, newRow.args):
                     print('Creating new entry...')
-                    newRow = self.snmpEngine.setTableRow('DISMAN-EVENT-MIB', index, *args, auth='antoine')
+                    newRow = table.setRow(index, varBinds, auth='antoine')
                     if not newRow: 
                         print(f'Failed to create new entry in table {tableName}')
 
@@ -142,68 +105,45 @@ class Switch(ManagedNode):
 
     def _clearTrapConfig(self):
 
-        def clearDismanTable(tableName):
-            entryStatus = getTableColumns(self.snmpEngine.mibViewController, 'DISMAN-EVENT-MIB', tableName)[-1]
-            controlColumn = self.snmpEngine.walk('DISMAN-EVENT-MIB', entryStatus, format='instOID:valOID')
-            
-            if not controlColumn:
-                print(f"Table {tableName} is empty")
-                return
-
-            if isinstance(controlColumn, list):
-                for instOid, in controlColumn:
-                    print('Deleting entry...')
-                    self.snmpEngine.setByOID('destroy', instOid, auth='antoine')
-            else:
-                instOid, = controlColumn
-                self.snmpEngine.setByOID('destroy', instOid, auth='antoine')
-
+        def clearDismanTable(tableName, controlColumn):
+            table = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', tableName)
+            table.setColumn(controlColumn, 'destroy', auth='antoine')
             print(f'Table {tableName} has been deleted')
         
-        clearDismanTable('mteObjectsTable')
-        clearDismanTable('mteEventTable')
-        clearDismanTable('mteTriggerTable')
+        clearDismanTable('mteTriggerTable', 'mteTriggerEntryStatus')
+        clearDismanTable('mteEventTable', 'mteEventEntryStatus')
+        clearDismanTable('mteObjectsTable', 'mteObjectsEntryStatus')
     
 
     def _activateTrapConfig(self):
 
-        def activateDismanTable(tableName):
-            entryStatus = getTableColumns(self.snmpEngine.mibViewController, 'DISMAN-EVENT-MIB', tableName)[-1]
-            controlColumn = self.snmpEngine.walk('DISMAN-EVENT-MIB', entryStatus, format='instOID:valOID')
-
-            if not controlColumn:
-                print(f"Table {tableName} is empty")
-                return
-             
-            if isinstance(controlColumn, list):
-                for instOid, in controlColumn:
-                    print('Activating entry...')
-                    self.snmpEngine.setByOID('active', instOid, auth='antoine')
-            else:
-                instOid, = controlColumn
-                self.snmpEngine.setByOID('active', instOid, auth='antoine')
-
+        def activateDismanTable(tableName, controlColumn):
+            table = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', tableName)
+            table.setColumn(controlColumn, 'active', auth='antoine')
             print(f'Table {tableName} has been activated')
         
-        activateDismanTable('mteObjectsTable')
-        activateDismanTable('mteEventTable')
-        activateDismanTable('mteTriggerTable')
+        activateDismanTable('mteObjectsTable', 'mteObjectsEntryStatus')
+        activateDismanTable('mteEventTable', 'mteEventEntryStatus')
+        activateDismanTable('mteTriggerTable', 'mteTriggerEntryStatus')
 
 
     def _getTriggerTest(self, test, sampleType, index):
         if 'existence' in [test, mteTriggerTest[test]]:
-            fullTestConfig = self.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerExistenceTable', 'mteTriggerExistenceTest', 'mteTriggerExistenceEventOwner', 'mteTriggerExistenceEvent', startIndex=index, maxRepetitions=1, format='instSymbol:valPretty')['mteTriggerExistenceTable'][0]
+            table = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteTriggerExistenceTable')
+            fullTestConfig = table.pullData('mteTriggerExistenceTest', 'mteTriggerExistenceEventOwner', 'mteTriggerExistenceEvent', startIndex=index, maxRepetitions=1)
             testConfig = {key: fullTestConfig[key] for key in ['mteTriggerExistenceTest']}
             eventIndex = [fullTestConfig['mteTriggerExistenceEventOwner'], fullTestConfig['mteTriggerExistenceEvent']]
         
         elif 'boolean' in [test, mteTriggerTest[test]]:
-            fullTestConfig = self.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerBooleanTable', 'mteTriggerBooleanComparison', 'mteTriggerBooleanValue', 'mteTriggerBooleanEventOwner', 'mteTriggerBooleanEvent', startIndex=index, maxRepetitions=1, format='instSymbol:valPretty')['mteTriggerBooleanTable'][0]
+            table = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteTriggerBooleanTable')
+            fullTestConfig = table.pullData('mteTriggerBooleanComparison', 'mteTriggerBooleanValue', 'mteTriggerBooleanEventOwner', 'mteTriggerBooleanEvent', startIndex=index, maxRepetitions=1)
             testConfig = {key: fullTestConfig[key] for key in ['mteTriggerBooleanComparison', 'mteTriggerBooleanValue']}
             eventIndex = [fullTestConfig['mteTriggerBooleanEventOwner'], fullTestConfig['mteTriggerBooleanEvent']]
         
         elif 'threshold' in [test, mteTriggerTest[test]]:
-            fullTestConfig = self.snmpEngine.getTable('DISMAN-EVENT-MIB', 'mteTriggerThresholdTable', 'mteTriggerThresholdStartup', 'mteTriggerThresholdRising', 'mteTriggerThresholdFalling', 'mteTriggerThresholdDeltaRising', 'mteTriggerThresholdDeltaFalling', 'mteTriggerThresholdRisingEventOwner', 'mteTriggerThresholdRisingEvent', 'mteTriggerThresholdFallingEventOwner', 'mteTriggerThresholdFallingEvent', 'mteTriggerThresholdDeltaRisingEventOwner', 'mteTriggerThresholdDeltaRisingEvent', 'mteTriggerThresholdDeltaFallingEventOwner', 'mteTriggerThresholdDeltaFallingEvent', startIndex=index, maxRepetitions=1, format='instSymbol:valPretty')['mteTriggerThresholdTable'][0]
-
+            table = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteTriggerThresholdTable')
+            fullTestConfig = table.pullData('mteTriggerThresholdStartup', 'mteTriggerThresholdRising', 'mteTriggerThresholdFalling', 'mteTriggerThresholdDeltaRising', 'mteTriggerThresholdDeltaFalling', 'mteTriggerThresholdRisingEventOwner', 'mteTriggerThresholdRisingEvent', 'mteTriggerThresholdFallingEventOwner', 'mteTriggerThresholdFallingEvent', 'mteTriggerThresholdDeltaRisingEventOwner', 'mteTriggerThresholdDeltaRisingEvent', 'mteTriggerThresholdDeltaFallingEventOwner', 'mteTriggerThresholdDeltaFallingEvent', startIndex=index, maxRepetitions=1)
+            
             if fullTestConfig['mteTriggerThresholdStartup'] == 'rising':
 
                 if sampleType == 'absoluteValue':

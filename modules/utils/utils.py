@@ -12,13 +12,10 @@ def createMibViewController():
     return mibViewController
 
 
-def getOid(mibViewController, *args, stringify=False):
+def getOid(mibViewController, *args):
     oid = ObjectIdentity(*args)
     oid.resolveWithMib(mibViewController)
-    res = oid.getOid()
-    if stringify:
-        res = str(res)
-    return res
+    return str(oid.getOid())
 
 
 def getMibSymbol(mibViewController, oid):
@@ -37,19 +34,6 @@ def getMibNode(mibViewController, oid):
     oid = ObjectIdentity(oid)
     oid.resolveWithMib(mibViewController)
     return oid.getMibNode()
-
-
-def getTableColumns(mibViewController, mibName, tableName):
-    tableOid = getOid(mibViewController, mibName, tableName)
-    columns = []
-    i = 0
-    while True:
-        i += 1
-        _, column, args = getMibSymbol(mibViewController, f"{tableOid}.1.{i}")
-        if args:
-            break
-        columns.append(column)
-    return columns
 
 
 def formatter(mibViewController, varBinds, format: str):
@@ -103,11 +87,3 @@ def formatter(mibViewController, varBinds, format: str):
             formatted.append((key_pattern, value_pattern))
 
     return formatted
-
-
-
-def printableTable(table):
-    header = "| " + " | ".join([*table[0].keys()]) + " |" + "\n"
-    header = header + "-"*len(header) +"\n"
-    tableStr = header + "\n".join(["| " + " | ".join([*row.values()]) + " |" for row in table])
-    return f"```{tableStr}```"

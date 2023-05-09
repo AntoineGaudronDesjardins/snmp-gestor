@@ -1,5 +1,5 @@
 from pysnmp.proto.rfc1902 import Bits
-
+from modules.snmp.mibNode import MibNode
 
 class NamedBits:
     bits = { 0: Bits('\x80'), 1: Bits('\x40'), 2: Bits('\x20'), 3: Bits('\x10'), 4: Bits('\x08'), 5: Bits('\x04'), 6: Bits('\x02'), 7: Bits('\x01') }
@@ -18,8 +18,8 @@ class NamedBits:
 
 
 class Instance:
-    def __init__(self, refOid, callback=lambda x: x, wildcarded=False, oidFlag=False):
-        self.refOid = refOid
+    def __init__(self, oid, callback=lambda x: x, wildcarded=False, oidFlag=False):
+        self.oid = oid
         self.wildcarded = wildcarded
         self.oidFlag = oidFlag
         self.callback = callback
@@ -28,16 +28,17 @@ class Instance:
         self.oids = []
     
     def resolve(self, snmpEngine):
+        scalar = MibNode(snmpEngine, self.oid)
         if self.wildcarded:
-            resp = snmpEngine.walkByOID(self.refOid, format="instOID:valOID")
-            self.multiplicity = len(resp)
-            self.oids = [oid for entry in resp for oid in entry.keys()]
-            self.values = [self.callback(val) for entry in resp for val in entry.values()]
+            tableColumn = [*scalar.walk().values()][0]
+            self.multiplicity = len(tableColumn)
+            self.oids = [str(row[0][0].getOid()) for row in tableColumn]
+            self.values = [self.callback(row[0][1].prettyPrint()) for row in tableColumn]
         else:
-            resp = snmpEngine.getByOID(self.refOid, format="instOID:valOID")
+            scalar = MibNode(snmpEngine, self.oid).get()
             self.multiplicity = 1
-            self.oids = [self.refOid]
-            self.values = [self.callback(resp[self.refOid])]
+            self.oids = [self.oid]
+            self.values = [self.callback(scalar.varBind[1].prettyPrint())]
 
 
 
@@ -45,9 +46,6 @@ class Entry:
     def __init__(self, entry):
         self.index = [*entry['index'].values()]
         self.columns = entry['columns']
-        self.entryStatus = None
-        if "EntryStatus" in [*self.columns.keys()][-1]:
-            self.entryStatus = [*self.columns.keys()][-1]
         self.multiplicity = 1
         self.instValIndex = []
         self.indexes = []
@@ -60,9 +58,9 @@ class Entry:
             for j in self.instValIndex:
                 inst = self.args[i][j][1]
                 if inst.oidFlag:
-                    self.args[i][j] = (self.args[i][j][0], self.args[i][j][1].oids[i])
+                    self.args[i][j] = (self.args[i][j][0], inst.oids[i])
                 else:
-                    self.args[i][j] = (self.args[i][j][0], self.args[i][j][1].values[i])
+                    self.args[i][j] = (self.args[i][j][0], inst.values[i])
 
     def _extend(self, snmpEngine):
         for i, val in enumerate(self.columns.values()):
