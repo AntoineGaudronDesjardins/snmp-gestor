@@ -1,4 +1,4 @@
-from modules.devices import Switch, Router
+from modules.devices import Switch, Router, Equipo
 from modules.snmp import TrapListener
 from modules.bot import Bot
 from conf import TOKEN, switchConfig, routerConfig

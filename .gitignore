@@ -3,6 +3,8 @@ __pycache__/
 
 # Ignore python virtual environment
 env/
+.spyproject/
+*.DS_Store
 
 # Ignore conf file
 conf.py
