@@ -70,6 +70,11 @@ class Table:
         newRow = self.engine.setTableRow(instances, auth)
         if newRow and (column in self.columns):
             self.pullData(*self.columns)
+    
+
+    @property
+    def values(self):
+        return [[varBind[1].prettyPrint() for varBind in row] for row in self.rows]
 
 
     ######################################################################################
@@ -83,35 +88,51 @@ class Table:
             return formattedTable
     
 
-    def __repr__(self, index=True, header=True):
+    def print(self, index=True, header=True):
         _, tableName, _ = self.ref[0].getMibSymbol()
         if not self.rows:
             return f"Table {tableName} is empty"
         
-        columnsSize = [0 for _ in self.columns]
-        if header:
-            columnsSize = [len(column) for column in self.columns]
+        elif len(self.rows) == 1:
+            rowData = []
+            for i, varBind in enumerate(self.rows[0]):
+                symb = self.columns[i]
+                rowData.append(f"  {symb} = {varBind[1].prettyPrint()} ")
+            rowData = '\n'.join(rowData)
             if index:
-                columnsSize.append(len("index"))
-        for j, row in enumerate(self.rows):
-            if index:
-                columnsSize[-1] = max(columnsSize[-1], len(",".join([str(i) for i in self.indexes[j]])))
-            for i, varBind in enumerate(row):
-                columnsSize[i] = max(columnsSize[i], len(varBind[1].prettyPrint()))
-        
-        table = []
-        if header:
-            table.append("| " + " | ".join([col.ljust(columnsSize[i]) for i, col in enumerate(self.columns)]) + " |")
-            if index:
-                table[0] = "| " + "index".ljust(columnsSize[-1]) + " " + table[0]
-            table.append("|" + "-"*(len(table[0])-2) + "|")
-        for j, row in enumerate(self.rows):
-            table.append("| " + " | ".join([varBind[1].prettyPrint().ljust(columnsSize[i]) for i, varBind in enumerate(row)]) + " |")
-            if index:
-                table[-1] = "| " + ",".join([str(i) for i in self.indexes[j]]).ljust(columnsSize[-1]) + " " + table[-1]
-        tableData = "\n".join(table)
+                printableIndex = [str(index) for index in self.indexes[0]]
+                rowData = f"  index = {'.'.join(printableIndex)} \n" + rowData
+            return f"\n _{tableName}_ : \n{rowData}"
 
-        return f"``` _{tableName}_ : \n{tableData}```"
+        else:
+            columnsSize = [0 for _ in self.columns]
+            if header:
+                columnsSize = [len(column) for column in self.columns]
+                if index:
+                    columnsSize.append(len("index"))
+            for j, row in enumerate(self.rows):
+                if index:
+                    columnsSize[-1] = max(columnsSize[-1], len(",".join([str(i) for i in self.indexes[j]])))
+                for i, varBind in enumerate(row):
+                    columnsSize[i] = max(columnsSize[i], len(varBind[1].prettyPrint()))
+            
+            table = []
+            if header:
+                table.append("| " + " | ".join([col.ljust(columnsSize[i]) for i, col in enumerate(self.columns)]) + " |")
+                if index:
+                    table[0] = "| " + "index".ljust(columnsSize[-1]) + " " + table[0]
+                table.append("|" + "+".join(["-"*(columnSize+2) for columnSize in columnsSize]) + "|")
+            for j, row in enumerate(self.rows):
+                table.append("| " + " | ".join([varBind[1].prettyPrint().ljust(columnsSize[i]) for i, varBind in enumerate(row)]) + " |")
+                if index:
+                    table[-1] = "| " + ",".join([str(i) for i in self.indexes[j]]).ljust(columnsSize[-1]) + " " + table[-1]
+            tableData = "\n".join(table)
+
+            return f"\n _{tableName}_ : ```\n{tableData}```"
+    
+
+    def __repr__(self):
+        return self.print()
     
 
     ######################################################################################
@@ -155,6 +176,18 @@ class Table:
                 return False, None
         
         return True, rowIndex
+    
+
+    # def __iter__(self):
+    #     self.iterIndex = 0
+    #     return self
+    
+
+    # def __next__(self):
+    #     if self.iterIndex >= len(self.rows):
+    #         raise StopIteration
+    #     self.iterIndex += 1
+    #     return [varBind[1].prettyPrint() for varBind in self.rows[self.iterIndex-1]]
     
 
     def __getitem__(self, key):

@@ -2,12 +2,10 @@ from telepot import Bot as TelegramBot, glance, message_identifier
 from telepot.loop import MessageLoop
 from telepot.helper import Answerer
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
-from telepot.namedtuple import InlineQueryResultArticle, InputTextMessageContent
 from threading import Thread
 from time import sleep
 
-from modules.utils import formatter, createMibViewController
-from modules.snmp import Table, MibNode
+from modules.utils import createMibViewController, escapeChars
 
 
 class Bot(Thread):
@@ -32,8 +30,6 @@ class Bot(Thread):
 
     
     def forwardTrap(self, ipAddress, varBinds):
-        msgTemplate = 'Alerta de "{}" ({}): \n{}'
-        varBinds = [f" {inst} = {val}" for inst, val in formatter(self.mibResolver, varBinds, format='instSymbol,valSymbol')]
         if ipAddress in self.devices:
             if self.devices[ipAddress].name:
                 name = self.devices[ipAddress].name
@@ -41,7 +37,13 @@ class Bot(Thread):
                 name = "sin nombre"
         else:
             name = "desconocido"
-        self.bot.sendMessage(self.chanID, msgTemplate.format(name, ipAddress, "\n".join(varBinds)))
+        name = escapeChars(name)
+        ipAddress = escapeChars(ipAddress)
+        data = "\n".join([varBind.print() for varBind in varBinds])
+        data = escapeChars(data)
+        msg = f'*Alerta de "{name}" \({ipAddress}\)*: \n\n{data}'
+
+        self.bot.sendMessage(self.chanID, msg, parse_mode='MarkdownV2')
 
     
     ######################################################################################
@@ -55,8 +57,7 @@ class Bot(Thread):
             cmd, *args = msg['text'].split(' ')
 
             if cmd == '/interactive':
-                devices = self._getDevices()
-                keyBoard = [[InlineKeyboardButton(text=f"{name}\n({ip})", callback_data=f"ip&{ip}")] for name, ip in devices]
+                keyBoard = [[InlineKeyboardButton(text=f"{device.name or 'sin nombre'}\n({ip})", callback_data=f"{device.__name__}&ip&{ip}")] for ip, device in self.devices.items()]
                 keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
                 self.bot.sendMessage(chat_id, 'Seleciona el equipo :', reply_markup=keyBoard)
 
@@ -82,22 +83,30 @@ class Bot(Thread):
 
 
     def handleCallback(self, msg):
-        query_id, from_id, query_data = glance(msg, flavor='callback_query')
+        query_id, _, query_data = glance(msg, flavor='callback_query')
         msg_identifier = (msg['message']['chat']['id'], msg['message']['message_id'])
         query_data = query_data.split("&")
 
         if query_data[0] == 'devices':
-            devices = self._getDevices()
-            keyBoard = [[InlineKeyboardButton(text=f"{name}\n({ip})", callback_data=f"ip&{ip}")] for name, ip in devices]
+            keyBoard = [[InlineKeyboardButton(text=f"{device.name or 'sin nombre'}\n({ip})", callback_data=f"{device.__name__}&ip&{ip}")] for ip, device in self.devices]
             keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
             self.bot.editMessageText(msg_identifier, 'Seleciona el equipo :', reply_markup=keyBoard)
 
-        elif query_data[0] == 'ip':
+        if query_data[0] == 'Switch':
+            self.switchHandler(msg_identifier, query_id, query_data[1:])
+
+    
+    ######################################################################################
+    ############################## Device specific methods ###############################
+    ######################################################################################
+    def switchHandler(self, msg_identifier, query_id, query_data):
+
+        if query_data[0] == 'ip':
             ip = query_data[1]
             keyBoard = [
-                [InlineKeyboardButton(text='Informacion global', callback_data=f'info&{ip}')],
-                [InlineKeyboardButton(text='Metricas de estado', callback_data=f'health&{ip}')],
-                [InlineKeyboardButton(text='Gestion de las alarmas', callback_data=f'alerts&{ip}')],
+                [InlineKeyboardButton(text='Informacion global', callback_data=f'Switch&info&{ip}')],
+                [InlineKeyboardButton(text='Metricas de estado', callback_data=f'Switch&health&{ip}')],
+                [InlineKeyboardButton(text='Gestion de las alarmas', callback_data=f'Switch&alerts&{ip}')],
                 [InlineKeyboardButton(text="<< volver", callback_data="devices")]
             ]
             keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
@@ -107,42 +116,113 @@ class Bot(Thread):
             ip = query_data[1]
             device = self.devices[ip]
             
-            msgTemplate = 'Informacion de {} \n\n{}'
-            metrics = device.getGlobalInfo()
-            metrics = [f" {inst} = {val}" for inst, val in metrics.items()]
+            info = "\n".join(device.printGlobalInfo())
+            info = escapeChars(info)
+            ipAddr = escapeChars(ip)
+            msg = f'*__Informacion de {ipAddr}__*: \n\n{info}'
 
-            keyBoard = [[InlineKeyboardButton(text="<< volver", callback_data=f"ip&{ip}")]]
+            keyBoard = [[InlineKeyboardButton(text="<< volver", callback_data=f"Switch&ip&{ip}")]]
             keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
 
-            self.bot.editMessageText(msg_identifier, msgTemplate.format(ip, "\n".join(metrics)), reply_markup=keyBoard)
+            self.bot.editMessageText(msg_identifier, msg, parse_mode='MarkdownV2', reply_markup=keyBoard)
             
         elif query_data[0] == "health":
             ip = query_data[1]
             device = self.devices[ip]
-            printableName = "\-".join(device.name.split("-"))
             
-            respText = f'*__Actividad de {printableName}__* \n\n'
-            metrics = device.getHealthMetrics()
-            for obj in metrics.items():
-                respText = respText + obj
+            metrics = "\n".join(device.printHealthMetrics())
+            metrics = escapeChars(metrics, ignore="_")
+            name = escapeChars(device.name)
+            respText = f'*__Actividad de {name}__* \n\n{metrics}'
 
-            keyBoard = [[InlineKeyboardButton(text="<< volver", callback_data=f"ip&{ip}")]]
+            keyBoard = [[InlineKeyboardButton(text="<< volver", callback_data=f"Switch&ip&{ip}")]]
             keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
 
             self.bot.editMessageText(msg_identifier, respText, parse_mode='MarkdownV2', reply_markup=keyBoard)
 
+        elif query_data[0] == "alerts":
+            ip = query_data[1]
+            keyBoard = [
+                [InlineKeyboardButton(text='Alarmas', callback_data=f'Switch&triggers&{ip}')],
+                [InlineKeyboardButton(text='Eventos', callback_data=f'Switch&events&{ip}')],
+                [InlineKeyboardButton(text="<< volver", callback_data=f"Switch&ip&{ip}")]
+            ]
+            keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
+            self.bot.editMessageText(msg_identifier, 'Que quieres gestionar :', reply_markup=keyBoard)
 
-            pass
-        # device = self.devices[query_data[1]]
-        # keyBoard = [
-        #     [InlineKeyboardButton(text='Metricas globales', callback_data='3&health')],
-        #     [InlineKeyboardButton(text='Historico de alarmas', callback_data='3&alerts')],
-        # ]
-        # keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
-        # self.bot.editMessageReplyMarkup(msg_identifier, keyBoard)
+        elif query_data[0] == "triggers":
+            ip = query_data[1]
+            device = self.devices[ip]
 
+            keyBoard = []
+            triggers, indexes = device.getTriggers()
+            for trigger, index in zip(triggers, indexes):
+                keyBoard.append([InlineKeyboardButton(text=trigger, callback_data=f"Switch&trigger&{ip}&{index}")])
+            keyBoard.append([InlineKeyboardButton(text="<< volver", callback_data=f'Switch&alerts&{ip}')])
+            keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
 
-        # self.bot.answerCallbackQuery(query_id, text=f'Got it ({query_data})')
+            self.bot.editMessageText(msg_identifier, "Selecciona una alarma", reply_markup=keyBoard)
+
+        elif query_data[0] == "events":
+            ip = query_data[1]
+            device = self.devices[ip]
+
+            keyBoard = []
+            events, indexes = device.getEvents()
+            for event, index in zip(events, indexes):
+                keyBoard.append([InlineKeyboardButton(text=event, callback_data=f"Switch&event&{ip}&{index}")])
+            keyBoard.append([InlineKeyboardButton(text="<< volver", callback_data=f'Switch&alerts&{ip}')])
+            keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
+
+            self.bot.editMessageText(msg_identifier, "Selecciona una evento", reply_markup=keyBoard)
+
+        elif query_data[0] == "trigger":
+            ip = query_data[1]
+            device = self.devices[ip]
+            index = query_data[2]
+            if len(query_data) > 3:
+                if query_data[3] == "True":
+                    device.enableTrigger(index)
+                    self.bot.answerCallbackQuery(query_id, text=f'Alarma activada')
+                else:
+                    device.disableTrigger(index)
+                    self.bot.answerCallbackQuery(query_id, text=f'Alarma desactivada')
+
+            trigger, enabled = device.getTrigger(index)
+            trigger = escapeChars(trigger.print(), ignore="_")
+            state = "desactivar" if enabled else "activar"
+            
+            keyBoard = [
+                [InlineKeyboardButton(text=state, callback_data=f"Switch&trigger&{ip}&{index}&{not enabled}")],
+                [InlineKeyboardButton(text="<< volver", callback_data=f"Switch&triggers&{ip}")],
+            ]
+            keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
+
+            self.bot.editMessageText(msg_identifier, trigger, parse_mode='MarkdownV2', reply_markup=keyBoard)
+
+        elif query_data[0] == "event":
+            ip = query_data[1]
+            device = self.devices[ip]
+            index = query_data[2]
+            if len(query_data) > 3:
+                if query_data[3] == "True":
+                    device.enableEvent(index)
+                    self.bot.answerCallbackQuery(query_id, text=f'Evento activado')
+                else:
+                    device.disableEvent(index)
+                    self.bot.answerCallbackQuery(query_id, text=f'Evento desactivado')
+
+            event, enabled = device.getTrigger(index)
+            event = escapeChars(event.print(), ignore="_")
+            state = "desactivar" if enabled else "activar"
+            
+            keyBoard = [
+                [InlineKeyboardButton(text=state, callback_data=f"Switch&event&{ip}&{index}&{not enabled}")],
+                [InlineKeyboardButton(text="<< volver", callback_data=f"Switch&triggers&{ip}")],
+            ]
+            keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
+
+            self.bot.editMessageText(msg_identifier, event, parse_mode='MarkdownV2', reply_markup=keyBoard)
 
     
     ######################################################################################

@@ -8,7 +8,7 @@ def main():
     print("Starting app...")
     # Declare monitored devices
     switch = Switch('192.168.31.10')
-    switch.resetTrapConfig()
+    # switch.resetTrapConfig()
     # Initalize bot
     bot = Bot(TOKEN)
     bot.addMonitoredDevices(switch)

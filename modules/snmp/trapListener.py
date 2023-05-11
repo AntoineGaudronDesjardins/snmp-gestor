@@ -1,5 +1,6 @@
-from modules.utils import createMibViewController, formatter
-
+from modules.utils import createMibViewController
+from modules.snmp.mibNode import MibNode
+from pysnmp.smi.rfc1902 import ObjectIdentity, ObjectType
 from pysnmp.carrier.asyncore.dispatch import AsyncoreDispatcher
 from pysnmp.carrier.asyncore.dgram import udp
 from pyasn1.codec.ber.decoder import decode
@@ -72,9 +73,9 @@ class TrapListener(Thread):
                     varBinds = pMod.apiPDU.getVarBinds(reqPDU)
 
                 print('Var-binds:')
-                formattedVarBinds = formatter(self.mibViewController, varBinds, format='instPretty,valPretty')
-                for oid, val in formattedVarBinds:
-                    print('  %s = %s' % (oid, val))
+                varBinds = [MibNode(None, ObjectType(ObjectIdentity(varBind[0]), varBind[1]), self.mibViewController) for varBind in varBinds]
+                for varBind in varBinds:
+                    print(varBind)
                 print('\n')
 
                 if self.bot:

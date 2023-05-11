@@ -3,9 +3,9 @@ from modules.utils import formatter
 
 
 class MibNode:
-    def __init__(self, snmpEngine, identifier):
+    def __init__(self, snmpEngine, identifier, mibs=None):
         self.engine = snmpEngine
-        self.mibs = snmpEngine.mibViewController
+        self.mibs = mibs if mibs else snmpEngine.mibViewController
         if isinstance(identifier, ObjectType):
             self.varBind = identifier
         elif isinstance(identifier, tuple) or isinstance(identifier, list):
@@ -59,11 +59,19 @@ class MibNode:
         return formatter(self.mibs, [self.varBind], format=pattern)
 
 
-    def __repr__(self):
-        _, symbol, _ = self.getMibSymbol()
-        return f"``` {symbol} = {self.varBind[1].prettyPrint()} ```\n\n"
-    
+    def print(self, symbol=True, index=False):
+        if symbol:
+            _, symb, ind = self.getMibSymbol()
+            if index:
+                symb = f"{symb}.{ind[0]}"
+            return f" {symb} = {self.varBind[1].prettyPrint()} "
+        else:
+            return self.varBind[1].prettyPrint()
 
+
+    def __repr__(self):
+        return self.print()
+    
     ######################################################################################
     ################################## Internal methods ##################################
     ######################################################################################
@@ -75,6 +83,8 @@ class MibNode:
             return self.varBind[key]
         elif key=="oid":
             return str(self.varBind[0].getOid())
+        elif key=="value":
+            return self.varBind[1].prettyPrint()
     
     def getMibSymbol(self):
         return self.varBind[0].getMibSymbol()

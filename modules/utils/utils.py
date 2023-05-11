@@ -1,6 +1,7 @@
 from pysnmp.smi.builder import MibBuilder, DirMibSource
 from pysnmp.smi.view import MibViewController
 from pysnmp.smi.rfc1902 import ObjectIdentity
+import re
 import os
 
 
@@ -87,3 +88,10 @@ def formatter(mibViewController, varBinds, format: str):
             formatted.append((key_pattern, value_pattern))
 
     return formatted
+
+
+def escapeChars(string, special_characters='._*#|~-=<>[]()\\', ignore=""):
+    special_characters = re.sub(rf'{ignore}', '', special_characters)
+    special_characters = rf'[{re.escape(special_characters)}]'
+    escaped_string = re.sub(special_characters, r'\\\g<0>', string)
+    return escaped_string

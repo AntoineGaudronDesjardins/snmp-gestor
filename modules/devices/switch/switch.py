@@ -7,20 +7,21 @@ from conf import switchCredentials
 class Switch(ManagedNode):
     def __init__(self, ipAddress):
         ManagedNode.__init__(self, ipAddress, credentials=switchCredentials)
+        self.__name__ = 'Switch'
 
 
     ######################################################################################
     ################################ Information methods #################################
     ######################################################################################
-    def getHealthMetrics(self):
+    def printHealthMetrics(self):
         healthMetrics = []
         # HOST-RESOURCES-MIB metrics
-        healthMetrics.append(MibNode(self.snmpEngine, ('HOST-RESOURCES-MIB', 'hrSystemUptime', 0)).get())
-        healthMetrics.append(MibNode(self.snmpEngine, ('HOST-RESOURCES-MIB', 'hrSystemProcesses', 0)).get())
-        healthMetrics.append(Table(self.snmpEngine, 'HOST-RESOURCES-MIB', 'hrStorageTable').pullData('hrStorageIndex', 'hrStorageUsed'))
-        healthMetrics.append(Table(self.snmpEngine, 'HOST-RESOURCES-MIB', 'hrProcessorTable').pullData('hrProcessorFrwID', 'hrProcessorLoad'))
+        healthMetrics.append(MibNode(self.snmpEngine, ('HOST-RESOURCES-MIB', 'hrSystemUptime', 0)).get().print())
+        healthMetrics.append(MibNode(self.snmpEngine, ('HOST-RESOURCES-MIB', 'hrSystemProcesses', 0)).get().print())
+        healthMetrics.append(Table(self.snmpEngine, 'HOST-RESOURCES-MIB', 'hrStorageTable').pullData('hrStorageIndex', 'hrStorageUsed').print(index=False))
+        healthMetrics.append(Table(self.snmpEngine, 'HOST-RESOURCES-MIB', 'hrProcessorTable').pullData('hrProcessorFrwID', 'hrProcessorLoad').print(index=False))
         # IF-MIB metrics
-        healthMetrics.append(Table(self.snmpEngine, 'IF-MIB', 'ifTable').pullData('ifIndex', 'ifOperStatus', 'ifLastChange'))
+        healthMetrics.append(Table(self.snmpEngine, 'IF-MIB', 'ifTable').pullData('ifIndex', 'ifOperStatus', 'ifLastChange').print(index=False))
         return healthMetrics
 
     
@@ -33,28 +34,36 @@ class Switch(ManagedNode):
         self._activateTrapConfig()
 
 
-    def getTriggers(self, all=False):
-        return Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteTriggerTable').pullData('mteTriggerComment', 'mteTriggerTest', 'mteTriggerSampleType', 'mteTriggerValueID', 'mteTriggerEnabled')
+    def getTriggers(self):
+        triggers = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteTriggerTable').pullData('mteTriggerEnabled')
+        indexes = [str(index[1]) for index in triggers.indexes]
+        decoder = { 'true': 'On', 'false': 'Off' }
+        return [f"{name} ({decoder[row[0]]})" for name, row in zip(indexes, triggers.values)], indexes
 
 
-    def getEvents(self, all=True):
-        return Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteEventTable').pullData('mteEventComment', 'mteEventEnabled')
+    def getEvents(self):
+        events = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteEventTable').pullData('mteEventEnabled')
+        indexes = [str(index[1]) for index in events.indexes]
+        decoder = { 'true': 'On', 'false': 'Off' }
+        return [f"{name} ({decoder[row[0]]})" for name, row in zip(indexes, events.values)], indexes
 
 
     def getTrigger(self, index):
-        return Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteTriggerTable').pullData('mteTriggerComment', 'mteTriggerTest', 'mteTriggerSampleType', 'mteTriggerValueID', 'mteTriggerEnabled', startIndex=index, maxRepetitions=1)
+        trigger = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteTriggerTable').pullData('mteTriggerComment', 'mteTriggerTest', 'mteTriggerSampleType', 'mteTriggerValueID', 'mteTriggerEnabled', startIndex=('antoine', index), maxRepetitions=1)
+        return trigger, trigger.values[0][4] == 'true'
     
     
     def getEvent(self, index):
-        return Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteEventTable').pullData('mteEventComment', 'mteEventEnabled', startIndex=index, maxRepetitions=1)
+        event = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', 'mteEventTable').pullData('mteEventComment', 'mteEventEnabled', startIndex=('antoine', index), maxRepetitions=1)
+        return event, event.values[0][1] == 'true'
 
 
     def enableTrigger(self, index):
-        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteTriggerEnabled', index)).set('true', auth='antoine')
+        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteTriggerEnabled', 'antoine', index)).set('true', auth='antoine')
 
 
     def enableEvent(self, index):
-        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteEventEnabled', *index)).set('true', auth='antoine')
+        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteEventEnabled', 'antoine', index)).set('true', auth='antoine')
     
 
     def enableAuthenticationFailureTrap(self):
@@ -62,11 +71,11 @@ class Switch(ManagedNode):
 
 
     def disableTrigger(self, index):
-        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteTriggerEnabled', *index)).set('false', auth='antoine')
+        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteTriggerEnabled', 'antoine', index)).set('false', auth='antoine')
 
 
     def disableEvent(self, index):
-        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteEventEnabled', *index)).set('false', auth='antoine')
+        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteEventEnabled', 'antoine', index)).set('false', auth='antoine')
     
 
     def disableAuthenticationFailureTrap(self):
