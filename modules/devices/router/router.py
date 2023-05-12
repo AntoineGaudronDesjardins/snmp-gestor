@@ -7,20 +7,23 @@ class Router(ManagedNode, Thread):
         Thread.__init__(self)
         ManagedNode.__init__(self, ipAddress, snmpWriteComunity=community)
         self.__name__ = 'Router'
-    
 
-    def registerBot(self, bot):
-        self.bot = bot
+    
+    ##################################################################################################
+    ##################################### INFORMACION DEL EQUIPO #####################################
+    ##################################################################################################    
+    def printGlobalInfo(self):
+        globalInfo = ManagedNode.printGlobalInfo(self)
+        # MIKROTIK-MIB
+        globalInfo.append(MibNode(self.snmpEngine, ('MIKROTIK-MIB', 'mtxrBuildTime', 0)).get().print())
+        globalInfo.append(MibNode(self.snmpEngine, ('MIKROTIK-MIB', 'mtxrLicSoftwareId', 0)).get().print())
+        globalInfo.append(MibNode(self.snmpEngine, ('MIKROTIK-MIB', 'mtxrLicVersion', 0)).get().print())
+        return globalInfo
 
 
     ##################################################################################################
     ####################################### Triggers handlers ########################################
     ##################################################################################################
-    
-    def triggerAlert(self, title, desc):
-        self.bot.sendAlert(self.ipAddress, title, desc)
-    
-
     def getTriggersState(self):
         return self.triggersState
     
@@ -39,13 +42,17 @@ class Router(ManagedNode, Thread):
     ####################################### Monitoring thread ########################################
     ##################################################################################################
     def run(self):
-        self.triggersState = { 'ifInOctets': True, 'ifOutOctets': True, 'ifInErrors': True, 'ifOutErrors': True }
-        tiempo_up = MibNode(self.snmpEngine, ('HOST-RESOURCES-MIB', 'hrSystemUptime', 0))
-        ifTable = Table(self.snmpEngine, 'IF-MIB', 'ifTable')
-        ifMetrics = dict()
+        self.triggersState = { 'ifInOctets': True, 'ifOutOctets': True, 'ifInErrors': True, 'ifOutErrors': True, 'ifOperStatus': True }
+
+        ifTable = Table(self.snmpEngine, 'IF-MIB', 'ifTable').pullData('ifIndex', 'ifInOctets', 'ifOutOctets', 'ifInErrors', 'ifOutErrors', 'ifOperStatus')
+        ifMetrics = {
+            'ifInErrors': int(ifInErrors),
+            'ifOutErrors': int(ifOutErrors),
+            'ifOperStatus': ifOperStatus,
+        }
+        
         while True:
-            tiempo_up = tiempo_up.get()
-            ifTable = ifTable.pullData('ifIndex', 'ifInOctets', 'ifOutOctets', 'ifInErrors', 'ifOutErrors', 'ifOperStatus')
+            ifTable.pullData('ifIndex', 'ifInOctets', 'ifOutOctets', 'ifInErrors', 'ifOutErrors', 'ifOperStatus')
 
             for ifIndex, ifInOctets, ifOutOctets, ifInErrors, ifOutErrors, ifOperStatus in ifTable.values:
 
@@ -74,7 +81,7 @@ class Router(ManagedNode, Thread):
                     desc = f"Se ha detectado {errors} error{'es' if errors > 1 else ''} en el trafico saliente por el puerto {ifIndex} del equipo."
                     self.triggerAlert(title, desc)
                 
-                if ifIndex in ifMetrics.keys() and ifMetrics[ifIndex]['ifOperStatus'] != ifOperStatus:
+                if self.triggersState['ifOutErrors'] and (ifMetrics[ifIndex]['ifOperStatus'] != ifOperStatus):
                     title = "Cambio de interfaz"
                     desc = f"La interfaz {ifIndex} ha pasado del estado {ifMetrics[ifIndex]['ifOperStatus']} al estado {ifOperStatus}"
                     self.triggerAlert(title, desc)
@@ -90,26 +97,3 @@ class Router(ManagedNode, Thread):
                 }
             
             sleep(5)
-    
-
-    ##################################################################################################
-    ##################################### INFORMACION DEL EQUIPO #####################################
-    ##################################################################################################    
-    def printGlobalInfo(self):
-        globalInfo = ManagedNode.printGlobalInfo(self)
-        # MIKROTIK-MIB
-        globalInfo.append(MibNode(self.snmpEngine, ('MIKROTIK-MIB', 'mtxrBuildTime', 0)).get().print())
-        globalInfo.append(MibNode(self.snmpEngine, ('MIKROTIK-MIB', 'mtxrLicSoftwareId', 0)).get().print())
-        globalInfo.append(MibNode(self.snmpEngine, ('MIKROTIK-MIB', 'mtxrLicVersion', 0)).get().print())
-        return globalInfo
-            
-    
-    def printHealthMetrics(self):
-        healthMetrics = []
-        # HOST-RESOURCES-MIB metrics
-        healthMetrics.append(MibNode(self.snmpEngine, ('HOST-RESOURCES-MIB', 'hrSystemUptime', 0)).get().print())
-        healthMetrics.append(Table(self.snmpEngine, 'HOST-RESOURCES-MIB', 'hrStorageTable').pullData('hrStorageIndex', 'hrStorageUsed').print(index=False))
-        healthMetrics.append(Table(self.snmpEngine, 'HOST-RESOURCES-MIB', 'hrProcessorTable').pullData('hrProcessorFrwID', 'hrProcessorLoad').print(index=False))
-        # IF-MIB metrics
-        healthMetrics.append(Table(self.snmpEngine, 'IF-MIB', 'ifTable').pullData('ifIndex', 'ifOperStatus', 'ifLastChange', 'ifOutOctets').print(index=False))
-        return healthMetrics

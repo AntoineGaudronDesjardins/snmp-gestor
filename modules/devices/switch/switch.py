@@ -1,28 +1,12 @@
 from modules.devices.switch.switchTrapConfig import switchTrapConfig, mteTriggerTest
 from modules.snmp import ManagedNode, Table, MibNode
 from modules.utils import Entry
-from conf import switchConfig
 
 
 class Switch(ManagedNode):
-    def __init__(self, ipAddress):
-        ManagedNode.__init__(self, ipAddress, credentials=switchConfig["credentials"])
+    def __init__(self, ipAddress, credentials):
+        ManagedNode.__init__(self, ipAddress, credentials=credentials)
         self.__name__ = 'Switch'
-
-
-    ######################################################################################
-    ################################ Information methods #################################
-    ######################################################################################
-    def printHealthMetrics(self):
-        healthMetrics = []
-        # HOST-RESOURCES-MIB metrics
-        healthMetrics.append(MibNode(self.snmpEngine, ('HOST-RESOURCES-MIB', 'hrSystemUptime', 0)).get().print())
-        healthMetrics.append(MibNode(self.snmpEngine, ('HOST-RESOURCES-MIB', 'hrSystemProcesses', 0)).get().print())
-        healthMetrics.append(Table(self.snmpEngine, 'HOST-RESOURCES-MIB', 'hrStorageTable').pullData('hrStorageIndex', 'hrStorageUsed').print(index=False))
-        healthMetrics.append(Table(self.snmpEngine, 'HOST-RESOURCES-MIB', 'hrProcessorTable').pullData('hrProcessorFrwID', 'hrProcessorLoad').print(index=False))
-        # IF-MIB metrics
-        healthMetrics.append(Table(self.snmpEngine, 'IF-MIB', 'ifTable').pullData('ifIndex', 'ifOperStatus', 'ifLastChange').print(index=False))
-        return healthMetrics
 
     
     ######################################################################################

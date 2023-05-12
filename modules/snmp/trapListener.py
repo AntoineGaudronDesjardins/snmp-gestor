@@ -11,7 +11,7 @@ from threading import Thread
 class TrapListener(Thread):
     mibViewController = createMibViewController()
 
-    def __init__(self, callback=None, bot=None):
+    def __init__(self, bot=None, callback=None):
         Thread.__init__(self)
         if not callback:
             callback = self.callbackFunction

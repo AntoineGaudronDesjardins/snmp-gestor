@@ -21,5 +21,10 @@ routerConfig = {
     "community": "public",
 }
 
+finaldeviceConfig = {
+    "ip": "XX.XX.XX.XX",
+}
+
 ###################################### TELEGRAM BOT CONFIGURATION #######################################
 TOKEN = "0000000000:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+CHAN_ID = "XXXXXXXXXX"
