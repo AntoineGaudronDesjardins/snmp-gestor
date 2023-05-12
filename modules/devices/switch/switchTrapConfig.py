@@ -4,13 +4,14 @@
 ##########################################################################################
 ##########################################################################################
 
-from pysnmp.proto.rfc1902 import Bits
 from modules.utils import createMibViewController, getOid
-from modules.utils import InstanceValue
+from modules.utils import Instance, NamedBits
 
-# There is an issue with BITS value processing with pysnmp
-mteEventActions = { 'notification': Bits('\x80'), 'set': Bits('\x40') }
-mteTriggerTest = { 'existence': Bits('\x80'), 'boolean': Bits('\x40'), 'threshold': Bits('\x20') }
+# There is an issue with BITS value processing with pysnmp    
+mteEventActions = NamedBits({'notification': 0, 'set': 1})
+mteTriggerTest = NamedBits({'existence': 0, 'boolean': 1, 'threshold': 2})
+mteTriggerExistenceTest = NamedBits({'present': 0, 'absent': 1, 'changed': 2})
+mteTriggerExistenceStartup = NamedBits({'present': 0, 'absent': 1})
 
 
 ##########################################################################################
@@ -20,25 +21,45 @@ mteTriggerTest = { 'existence': Bits('\x80'), 'boolean': Bits('\x40'), 'threshol
 mibViewController = createMibViewController()
 
 # Monitored objects
-sysUpTimeInstance = getOid(mibViewController, 'DISMAN-EVENT-MIB', 'sysUpTimeInstance', stringify=True) # only for testing
-hrProcessorLoad = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrProcessorLoad', stringify=True)
-hrStorageUsed = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrStorageUsed', stringify=True)
-ifLastChange = getOid(mibViewController, 'IF-MIB', 'ifLastChange', stringify=True)
+hrProcessorLoad = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrProcessorLoad')
+hrStorageUsed = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrStorageUsed')
+ifLastChange = getOid(mibViewController, 'IF-MIB', 'ifLastChange')
 
 # Joined objects
-hrSystemProcesses = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrSystemProcesses', 0, stringify=True)
-hrProcessorFrwID = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrProcessorFrwID', stringify=True)
-hrStorageIndex = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrStorageIndex', stringify=True)
-ifIndex = getOid(mibViewController, 'IF-MIB', 'ifIndex', stringify=True)
-ifOperStatus = getOid(mibViewController, 'IF-MIB', 'ifOperStatus', stringify=True)
+hrSystemProcesses = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrSystemProcesses', 0)
+hrProcessorFrwID = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrProcessorFrwID')
+hrStorageIndex = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrStorageIndex')
+hrStorageDescr = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrStorageDescr')
+ifIndex = getOid(mibViewController, 'IF-MIB', 'ifIndex')
+ifDescr = getOid(mibViewController, 'IF-MIB', 'ifDescr')
+ifOperStatus = getOid(mibViewController, 'IF-MIB', 'ifOperStatus')
+ifInOctets = getOid(mibViewController, 'IF-MIB', 'ifInOctets')
+ifInUcastPkts = getOid(mibViewController, 'IF-MIB', 'ifInUcastPkts')
+ifInNUcastPkts = getOid(mibViewController, 'IF-MIB', 'ifInNUcastPkts')
+ifInUnknownProtos = getOid(mibViewController, 'IF-MIB', 'ifInUnknownProtos')
+ifOutOctets = getOid(mibViewController, 'IF-MIB', 'ifOutOctets')
+ifOutUcastPkts = getOid(mibViewController, 'IF-MIB', 'ifOutUcastPkts')
+ifOutNUcastPkts = getOid(mibViewController, 'IF-MIB', 'ifOutNUcastPkts')
+ifInDiscards = getOid(mibViewController, 'IF-MIB', 'ifInDiscards')
+ifOutDiscards = getOid(mibViewController, 'IF-MIB', 'ifOutDiscards')
+ipIfStatsInHdrErrors = getOid(mibViewController, 'IP-MIB', 'ipIfStatsInHdrErrors')
+ipIfStatsInNoRoutes = getOid(mibViewController, 'IP-MIB', 'ipIfStatsInNoRoutes')
+ipIfStatsInAddrErrors = getOid(mibViewController, 'IP-MIB', 'ipIfStatsInAddrErrors')
+udpInErrors = getOid(mibViewController, 'UDP-MIB', 'udpInErrors')
+tcpInErrs = getOid(mibViewController, 'TCP-MIB', 'tcpInErrs')
+snmpInBadVersions = getOid(mibViewController, 'SNMPv2-MIB', 'snmpInBadVersions', 0)
+snmpInBadCommunityNames = getOid(mibViewController, 'SNMPv2-MIB', 'snmpInBadCommunityNames', 0)
+snmpInBadCommunityUses = getOid(mibViewController, 'SNMPv2-MIB', 'snmpInBadCommunityUses', 0)
+snmpInASNParseErrs = getOid(mibViewController, 'SNMPv2-MIB', 'snmpInASNParseErrs', 0)
 
 # Auxiliary objects
-hrStorageSize = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrStorageSize', stringify=True)
+sysUpTimeInstance = getOid(mibViewController, 'DISMAN-EVENT-MIB', 'sysUpTimeInstance')
+hrStorageSize = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrStorageSize')
 
 # Notification events
-mteTriggerFired = getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerFired', stringify=True)
-mteTriggerRising = getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerRising', stringify=True)
-mteTriggerFalling = getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerFired', stringify=True)
+mteTriggerFired = getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerFired')
+mteTriggerRising = getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerRising')
+mteTriggerFalling = getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerFired')
 
 
 ##########################################################################################
@@ -76,31 +97,10 @@ switchTrapConfig = {
     {
         'index': {
             'mteOwner': 'antoine',
-            'mteTriggerName': 'TestTrigger'
-        },
-        'columns': {
-            'mteTriggerComment': '',
-            'mteTriggerTest': mteTriggerTest['boolean'],
-            'mteTriggerSampleType': 'absoluteValue',
-            'mteTriggerValueID': sysUpTimeInstance,
-            'mteTriggerValueIDWildcard': 'false',
-            'mteTriggerTargetTag': '',
-            'mteTriggerContextName': '',
-            'mteTriggerContextNameWildcard': 'false',
-            'mteTriggerFrequency': '10', # in seconds
-            'mteTriggerObjectsOwner': '',
-            'mteTriggerObjects': '',
-            'mteTriggerEnabled': 'true',
-            'mteTriggerEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
             'mteTriggerName': 'MachineTooBusy'
         },
         'columns': {
-            'mteTriggerComment': 'Warning: High Processor Load!',
+            'mteTriggerComment': 'Trigger when the mean time of the CPU ocupation on one minute reach 90%.',
             'mteTriggerTest': mteTriggerTest['boolean'],
             'mteTriggerSampleType': 'absoluteValue',
             'mteTriggerValueID': hrProcessorLoad,
@@ -108,7 +108,7 @@ switchTrapConfig = {
             'mteTriggerTargetTag': '',
             'mteTriggerContextName': '',
             'mteTriggerContextNameWildcard': 'false',
-            'mteTriggerFrequency': '10', # in seconds
+            'mteTriggerFrequency': '5', # in seconds
             'mteTriggerObjectsOwner': 'antoine',
             'mteTriggerObjects': 'processMetrics',
             'mteTriggerEnabled': 'true',
@@ -121,17 +121,17 @@ switchTrapConfig = {
             'mteTriggerName': 'MemoryUsageWarning'
         },
         'columns': {
-            'mteTriggerComment': 'Warning: Memory usage has reached a critical level!',
+            'mteTriggerComment': 'Trigger when memory usage reach 90% of the maximal size. This trigger is replicate for each memory unit of the device',
             'mteTriggerTest': mteTriggerTest['threshold'],
             'mteTriggerSampleType': 'absoluteValue',
-            'mteTriggerValueID': hrStorageUsed,
-            'mteTriggerValueIDWildcard': 'true',
+            'mteTriggerValueID': Instance(hrStorageUsed, wildcarded=True, oidFlag=True),
+            'mteTriggerValueIDWildcard': 'false',
             'mteTriggerTargetTag': '',
             'mteTriggerContextName': '',
             'mteTriggerContextNameWildcard': 'false',
-            'mteTriggerFrequency': '10', # in seconds
-            'mteTriggerObjectsOwner': 'antoine',
-            'mteTriggerObjects': 'storageMetrics',
+            'mteTriggerFrequency': '5', # in seconds
+            'mteTriggerObjectsOwner': '',
+            'mteTriggerObjects': '',
             'mteTriggerEnabled': 'true',
             'mteTriggerEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
         },
@@ -142,7 +142,7 @@ switchTrapConfig = {
             'mteTriggerName': 'InterfaceStatusUpdate'
         },
         'columns': {
-            'mteTriggerComment': 'Warning: Interface state changed',
+            'mteTriggerComment': 'Trigger when an interface of the device knows a change of state.',
             'mteTriggerTest': mteTriggerTest['existence'],
             'mteTriggerSampleType': 'deltaValue',
             'mteTriggerValueID': ifLastChange,
@@ -150,13 +150,97 @@ switchTrapConfig = {
             'mteTriggerTargetTag': '',
             'mteTriggerContextName': '',
             'mteTriggerContextNameWildcard': 'false',
-            'mteTriggerFrequency': '10', # in seconds
+            'mteTriggerFrequency': '5', # in seconds
             'mteTriggerObjectsOwner': 'antoine',
             'mteTriggerObjects': 'interfacesMetrics',
             'mteTriggerEnabled': 'true',
             'mteTriggerEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
         },
     },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteTriggerName': 'IncommingTrafficOverload'
+        },
+        'columns': {
+            'mteTriggerComment': 'Trigger when the variation incomming number of octets rises.',
+            'mteTriggerTest': mteTriggerTest['boolean'],
+            'mteTriggerSampleType': 'deltaValue',
+            'mteTriggerValueID': ifInOctets,
+            'mteTriggerValueIDWildcard': 'true',
+            'mteTriggerTargetTag': '',
+            'mteTriggerContextName': '',
+            'mteTriggerContextNameWildcard': 'false',
+            'mteTriggerFrequency': '5', # in seconds
+            'mteTriggerObjectsOwner': 'antoine',
+            'mteTriggerObjects': 'incommingTrafficMetrics',
+            'mteTriggerEnabled': 'true',
+            'mteTriggerEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteTriggerName': 'UnusualOutgoingTraffic'
+        },
+        'columns': {
+            'mteTriggerComment': 'Trigger when the variation of the outgoing octets cross over given thresholds.',
+            'mteTriggerTest': mteTriggerTest['threshold'],
+            'mteTriggerSampleType': 'deltaValue',
+            'mteTriggerValueID': ifOutOctets,
+            'mteTriggerValueIDWildcard': 'true',
+            'mteTriggerTargetTag': '',
+            'mteTriggerContextName': '',
+            'mteTriggerContextNameWildcard': 'false',
+            'mteTriggerFrequency': '5', # in seconds
+            'mteTriggerObjectsOwner': 'antoine',
+            'mteTriggerObjects': 'outgoingTrafficMetrics',
+            'mteTriggerEnabled': 'true',
+            'mteTriggerEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteTriggerName': 'PerformanceIssue'
+        },
+        'columns': {
+            'mteTriggerComment': 'Trigger when the variation of the number of droped packets reach limit threshold.',
+            'mteTriggerTest': mteTriggerTest['boolean'],
+            'mteTriggerSampleType': 'deltaValue',
+            'mteTriggerValueID': ifOutDiscards,
+            'mteTriggerValueIDWildcard': 'true',
+            'mteTriggerTargetTag': '',
+            'mteTriggerContextName': '',
+            'mteTriggerContextNameWildcard': 'false',
+            'mteTriggerFrequency': '5', # in seconds
+            'mteTriggerObjectsOwner': 'antoine',
+            'mteTriggerObjects': 'errorsTrafficMetrics',
+            'mteTriggerEnabled': 'true',
+            'mteTriggerEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
+        },
+    },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteTriggerName': 'UnauthorizedAccess'
+    #     },
+    #     'columns': {
+    #         'mteTriggerComment': 'Trigger when a snmp request with bad community name is detected.',
+    #         'mteTriggerTest': mteTriggerTest['existence'],
+    #         'mteTriggerSampleType': 'absoluteValue',
+    #         'mteTriggerValueID': snmpInBadCommunityNames,
+    #         'mteTriggerValueIDWildcard': 'false',
+    #         'mteTriggerTargetTag': '',
+    #         'mteTriggerContextName': '',
+    #         'mteTriggerContextNameWildcard': 'false',
+    #         'mteTriggerFrequency': '5', # in seconds
+    #         'mteTriggerObjectsOwner': 'antoine',
+    #         'mteTriggerObjects': 'intrusionMetrics',
+    #         'mteTriggerEnabled': 'true',
+    #         'mteTriggerEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
+    #     },
+    # },
 ],
 
 ############################ Configuration for delta sampling ############################
@@ -177,6 +261,39 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteTriggerName': 'InterfaceStatusUpdate'
+        },
+        'columns': {
+            'mteTriggerDeltaDiscontinuityID': sysUpTimeInstance,
+            'mteTriggerDeltaDiscontinuityIDWildcard': 'false',
+            'mteTriggerDeltaDiscontinuityIDType': 'timeTicks',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteTriggerName': 'IncommingTrafficOverload'
+        },
+        'columns': {
+            'mteTriggerDeltaDiscontinuityID': sysUpTimeInstance,
+            'mteTriggerDeltaDiscontinuityIDWildcard': 'false',
+            'mteTriggerDeltaDiscontinuityIDType': 'timeTicks',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteTriggerName': 'UnusualOutgoingTraffic'
+        },
+        'columns': {
+            'mteTriggerDeltaDiscontinuityID': sysUpTimeInstance,
+            'mteTriggerDeltaDiscontinuityIDWildcard': 'false',
+            'mteTriggerDeltaDiscontinuityIDType': 'timeTicks',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteTriggerName': 'PerformanceIssue'
         },
         'columns': {
             'mteTriggerDeltaDiscontinuityID': sysUpTimeInstance,
@@ -211,8 +328,8 @@ switchTrapConfig = {
             'mteTriggerName': 'InterfaceStatusUpdate'
         },
         'columns': {
-            'mteTriggerExistenceTest': 'changed',
-            'mteTriggerExistenceStartup': 'present',
+            'mteTriggerExistenceTest': mteTriggerExistenceTest['changed'],
+            'mteTriggerExistenceStartup': mteTriggerExistenceStartup['present'],
             'mteTriggerExistenceObjectsOwner': '',
             'mteTriggerExistenceObjects': '',
             'mteTriggerExistenceEventOwner': 'antoine',
@@ -244,21 +361,6 @@ switchTrapConfig = {
     {
         'index': {
             'mteOwner': 'antoine',
-            'mteTriggerName': 'TestTrigger'
-        },
-        'columns': {
-            'mteTriggerBooleanComparison': 'greaterOrEqual',
-            'mteTriggerBooleanValue': '6000',
-            'mteTriggerBooleanStartup': 'true',
-            'mteTriggerBooleanObjectsOwner': '',
-            'mteTriggerBooleanObjects': '',
-            'mteTriggerBooleanEventOwner': 'antoine',
-            'mteTriggerBooleanEvent': 'DeviceAlert',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
             'mteTriggerName': 'MachineTooBusy'
         },
         'columns': {
@@ -269,6 +371,36 @@ switchTrapConfig = {
             'mteTriggerBooleanObjects': '',
             'mteTriggerBooleanEventOwner': 'antoine',
             'mteTriggerBooleanEvent': 'DeviceAlert',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteTriggerName': 'IncommingTrafficOverload'
+        },
+        'columns': {
+            'mteTriggerBooleanComparison': 'greaterOrEqual',
+            'mteTriggerBooleanValue': '10',
+            'mteTriggerBooleanStartup': 'true',
+            'mteTriggerBooleanObjectsOwner': '',
+            'mteTriggerBooleanObjects': '',
+            'mteTriggerBooleanEventOwner': 'antoine',
+            'mteTriggerBooleanEvent': 'TrafficAlert',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteTriggerName': 'PerformanceIssue'
+        },
+        'columns': {
+            'mteTriggerBooleanComparison': 'greaterOrEqual',
+            'mteTriggerBooleanValue': '50',
+            'mteTriggerBooleanStartup': 'true',
+            'mteTriggerBooleanObjectsOwner': '',
+            'mteTriggerBooleanObjects': '',
+            'mteTriggerBooleanEventOwner': 'antoine',
+            'mteTriggerBooleanEvent': 'PerformanceAlert',
         },
     },
 ],
@@ -308,7 +440,7 @@ switchTrapConfig = {
         },
         'columns': {
             'mteTriggerThresholdStartup': 'rising',
-            'mteTriggerThresholdRising': InstanceValue(hrStorageSize, lambda x: int(0.9 * x), wildcarded=True),
+            'mteTriggerThresholdRising': Instance(hrStorageSize, lambda x: int(0.9 * int(x)), wildcarded=True),
             'mteTriggerThresholdFalling': '0',
             'mteTriggerThresholdDeltaRising': '0',
             'mteTriggerThresholdDeltaFalling': '0',
@@ -322,6 +454,29 @@ switchTrapConfig = {
             'mteTriggerThresholdDeltaRisingEvent': '',
             'mteTriggerThresholdDeltaFallingEventOwner': '',
             'mteTriggerThresholdDeltaFallingEvent': '',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteTriggerName': 'UnusualOutgoingTraffic'
+        },
+        'columns': {
+            'mteTriggerThresholdStartup': 'risingOrFalling',
+            'mteTriggerThresholdRising': '0',
+            'mteTriggerThresholdFalling': '0',
+            'mteTriggerThresholdDeltaRising': '100',
+            'mteTriggerThresholdDeltaFalling': '10',
+            'mteTriggerThresholdObjectsOwner': '',
+            'mteTriggerThresholdObjects': '',
+            'mteTriggerThresholdRisingEventOwner': '',
+            'mteTriggerThresholdRisingEvent': '',
+            'mteTriggerThresholdFallingEventOwner': '',
+            'mteTriggerThresholdFallingEvent': '',
+            'mteTriggerThresholdDeltaRisingEventOwner': 'antoine',
+            'mteTriggerThresholdDeltaRisingEvent': 'TrafficAlert',
+            'mteTriggerThresholdDeltaFallingEventOwner': 'antoine',
+            'mteTriggerThresholdDeltaFallingEvent': 'TrafficAlert',
         },
     },
 ],
@@ -396,7 +551,31 @@ switchTrapConfig = {
             'mteObjectsIndex': '2'
         },
         'columns': {
+            'mteObjectsID': hrStorageDescr,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'storageMetrics',
+            'mteObjectsIndex': '3'
+        },
+        'columns': {
             'mteObjectsID': hrStorageUsed,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'storageMetrics',
+            'mteObjectsIndex': '4'
+        },
+        'columns': {
+            'mteObjectsID': hrStorageSize,
             'mteObjectsIDWildcard': 'true',
             'mteObjectsEntryStatus': 'createAndGo',
         },
@@ -417,10 +596,262 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'interfacesMetrics',
-            'mteObjectsIndex': '1'
+            'mteObjectsIndex': '2'
         },
         'columns': {
             'mteObjectsID': ifOperStatus,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'interfacesMetrics',
+            'mteObjectsIndex': '3'
+        },
+        'columns': {
+            'mteObjectsID': ifDescr,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'incommingTrafficMetrics',
+            'mteObjectsIndex': '1'
+        },
+        'columns': {
+            'mteObjectsID': ifIndex,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'incommingTrafficMetrics',
+            'mteObjectsIndex': '2'
+        },
+        'columns': {
+            'mteObjectsID': ifInOctets,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'incommingTrafficMetrics',
+            'mteObjectsIndex': '3'
+        },
+        'columns': {
+            'mteObjectsID': ifInUcastPkts,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'incommingTrafficMetrics',
+            'mteObjectsIndex': '4'
+        },
+        'columns': {
+            'mteObjectsID': ifInNUcastPkts,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'incommingTrafficMetrics',
+            'mteObjectsIndex': '5'
+        },
+        'columns': {
+            'mteObjectsID': ifInUnknownProtos,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'outgoingTrafficMetrics',
+            'mteObjectsIndex': '1'
+        },
+        'columns': {
+            'mteObjectsID': ifIndex,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'outgoingTrafficMetrics',
+            'mteObjectsIndex': '2'
+        },
+        'columns': {
+            'mteObjectsID': ifOutOctets,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'outgoingTrafficMetrics',
+            'mteObjectsIndex': '3'
+        },
+        'columns': {
+            'mteObjectsID': ifOutUcastPkts,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'outgoingTrafficMetrics',
+            'mteObjectsIndex': '4'
+        },
+        'columns': {
+            'mteObjectsID': ifOutNUcastPkts,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'errorsTrafficMetrics',
+            'mteObjectsIndex': '1'
+        },
+        'columns': {
+            'mteObjectsID': ifInDiscards,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'errorsTrafficMetrics',
+            'mteObjectsIndex': '2'
+        },
+        'columns': {
+            'mteObjectsID': ifOutDiscards,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'errorsTrafficMetrics',
+            'mteObjectsIndex': '3'
+        },
+        'columns': {
+            'mteObjectsID': ipIfStatsInHdrErrors,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'errorsTrafficMetrics',
+            'mteObjectsIndex': '4'
+        },
+        'columns': {
+            'mteObjectsID': ipIfStatsInNoRoutes,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'errorsTrafficMetrics',
+            'mteObjectsIndex': '5'
+        },
+        'columns': {
+            'mteObjectsID': ipIfStatsInAddrErrors,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'errorsTrafficMetrics',
+            'mteObjectsIndex': '6'
+        },
+        'columns': {
+            'mteObjectsID': udpInErrors,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'errorsTrafficMetrics',
+            'mteObjectsIndex': '7'
+        },
+        'columns': {
+            'mteObjectsID': tcpInErrs,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'intrusionMetrics',
+            'mteObjectsIndex': '1'
+        },
+        'columns': {
+            'mteObjectsID': snmpInBadVersions,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'intrusionMetrics',
+            'mteObjectsIndex': '2'
+        },
+        'columns': {
+            'mteObjectsID': snmpInBadCommunityNames,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'intrusionMetrics',
+            'mteObjectsIndex': '3'
+        },
+        'columns': {
+            'mteObjectsID': snmpInBadCommunityUses,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'intrusionMetrics',
+            'mteObjectsIndex': '4'
+        },
+        'columns': {
+            'mteObjectsID': snmpInASNParseErrs,
             'mteObjectsIDWildcard': 'true',
             'mteObjectsEntryStatus': 'createAndGo',
         },
@@ -449,7 +880,43 @@ switchTrapConfig = {
             'mteEventName': 'DeviceAlert'
         },
         'columns': {
-            'mteEventComment': '',
+            'mteEventComment': 'Device related issue',
+            'mteEventActions': mteEventActions['notification'],
+            'mteEventEnabled': 'true',
+            'mteEventEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteEventName': 'TrafficAlert'
+        },
+        'columns': {
+            'mteEventComment': 'Anormal traffic load',
+            'mteEventActions': mteEventActions['notification'],
+            'mteEventEnabled': 'true',
+            'mteEventEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteEventName': 'PerformanceAlert'
+        },
+        'columns': {
+            'mteEventComment': 'Performance issue',
+            'mteEventActions': mteEventActions['notification'],
+            'mteEventEnabled': 'true',
+            'mteEventEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteEventName': 'IntrusionAlert'
+        },
+        'columns': {
+            'mteEventComment': 'Unauthorized activity',
             'mteEventActions': mteEventActions['notification'],
             'mteEventEnabled': 'true',
             'mteEventEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
@@ -476,6 +943,39 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteEventName': 'DeviceAlert'
+        },
+        'columns': {
+            'mteEventNotification': mteTriggerFired,
+            'mteEventNotificationObjectsOwner': '',
+            'mteEventNotificationObjects': '',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteEventName': 'TrafficAlert'
+        },
+        'columns': {
+            'mteEventNotification': mteTriggerFired,
+            'mteEventNotificationObjectsOwner': '',
+            'mteEventNotificationObjects': '',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteEventName': 'PerformanceAlert'
+        },
+        'columns': {
+            'mteEventNotification': mteTriggerFired,
+            'mteEventNotificationObjectsOwner': '',
+            'mteEventNotificationObjects': '',
+        },
+    },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteEventName': 'IntrusionAlert'
         },
         'columns': {
             'mteEventNotification': mteTriggerFired,

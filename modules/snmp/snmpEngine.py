@@ -1,4 +1,6 @@
-from modules.utils import createMibViewController, getOid, getTableColumns, formatter
+from modules.utils import createMibViewController
+from modules.snmp.table import Table
+from modules.snmp.mibNode import MibNode
 
 from pysnmp.hlapi import SnmpEngine as Engine, UdpTransportTarget, ContextData
 from pysnmp.hlapi import ObjectType, ObjectIdentity
@@ -37,183 +39,148 @@ class SnmpEngine:
 
     ######################################################################################
     ################################## Request methods ###################################
+    ######################################################################################     
+    def get(self, inst, auth):
+        sess = self._getSession(auth, rw=False)
+        iterator = getCmd(self.engine, sess, self.transport, self.context, inst)
+        response = next(iterator)
+        varBinds = self._extractResponse(response)
+        return varBinds[0] if varBinds and len(varBinds)==1 else None
+        
+    
+    def getNext(self, obj, auth):
+        sess = self._getSession(auth, rw=False)
+        iterator = nextCmd(self.engine, sess, self.transport, self.context, obj)
+        response = next(iterator)
+        varBinds = self._extractResponse(response)
+        return varBinds[0] if varBinds and len(varBinds)==1 else None
+
+
+    def set(self, inst, auth):
+        sess = self._getSession(auth, rw=True)
+        iterator = setCmd(self.engine, sess, self.transport, self.context, inst)
+        response = next(iterator)
+        varBinds = self._extractResponse(response)
+        return varBinds[0] if varBinds and len(varBinds)==1 else None
+    
+
+    def walk(self, scalar, auth):
+        sess = self._getSession(auth, rw=False)
+        res, _ = self._walkRecursive(scalar, sess)
+        return res
+    
+
     ######################################################################################
-    def get(self, mibName, objectName, *instanceIdentifier, auth=None, format="default"):
-        if auth:
-            if auth in self.communities:
-                auth = self.communities[auth]
-            elif auth in self.users:
-                auth = self.users[auth]
-        else:
-            auth = self.communities["readCommunity"]
+    ################################# Gestion de tablas ##################################
+    ######################################################################################
+    def getTable(self, columns, maxRepetitions, auth, includeFirst, check):
+        sess = self._getSession(auth, rw=False)
 
-        instance = ObjectType(ObjectIdentity(mibName, objectName, *instanceIdentifier))
-        iterator = getCmd(self.engine, auth, self.transport, self.context, instance)
+        if includeFirst:
+            firstRow = getCmd(self.engine, sess, self.transport, self.context, *columns)
+        iterator = bulkCmd(self.engine, sess, self.transport, self.context, 0, maxRepetitions, *columns)
 
-        response = next(iterator)
-        if not SnmpEngine.failedRequest(response):
-            varBinds = response[3]
-            return formatter(self.mibViewController, varBinds, format=format)
-        
-    
-    def getByOID(self, oid, auth=None, format="default"):
-        if auth:
-            if auth in self.communities:
-                auth = self.communities[auth]
-            elif auth in self.users:
-                auth = self.users[auth]
-        else:
-            auth = self.communities["readCommunity"]
-
-        instance = ObjectType(ObjectIdentity(oid))
-        iterator = getCmd(self.engine, auth, self.transport, self.context, instance)
-
-        response = next(iterator)
-        if not SnmpEngine.failedRequest(response):
-            varBinds = response[3]
-            return formatter(self.mibViewController, varBinds, format=format)
-        
-    
-    def getNext(self, mibName, objectName, *instanceIdentifier, auth=None, format="default"):
-        if auth:
-            if auth in self.communities:
-                auth = self.communities[auth]
-            elif auth in self.users:
-                auth = self.users[auth]
-        else:
-            auth = self.communities["readCommunity"]
-
-        initialObject = ObjectType(ObjectIdentity(mibName, objectName, *instanceIdentifier))
-        iterator = nextCmd(self.engine, auth, self.transport, self.context, initialObject)
-
-        response = next(iterator)
-        if not SnmpEngine.failedRequest(response):
-            varBinds = response[3]
-            return formatter(self.mibViewController, varBinds, format=format)
-        
-    
-    def getNextByOID(self, oid, auth=None, format="default"):
-        if auth:
-            if auth in self.communities:
-                auth = self.communities[auth]
-            elif auth in self.users:
-                auth = self.users[auth]
-        else:
-            auth = self.communities["readCommunity"]
-
-        initialObject = ObjectType(ObjectIdentity(oid))
-        iterator = nextCmd(self.engine, auth, self.transport, self.context, initialObject)
-
-        response = next(iterator)
-        if not SnmpEngine.failedRequest(response):
-            varBinds = response[3]
-            return formatter(self.mibViewController, varBinds, format=format)
-    
-
-    def getTable(self, mibName, tableName, *columns, startIndex=[], maxRepetitions=1000, auth=None, format="default"):        
-        if not columns:
-            columns = getTableColumns(self.mibViewController, mibName, tableName)
-            columns = self._extractAccessibleObjects(mibName, *columns, auth=auth)
-        if not columns:
-            print(f'The table {tableName} is empty')
-            return { tableName : [] }
-        
-        if auth:
-            if auth in self.communities:
-                auth = self.communities[auth]
-            elif auth in self.users:
-                auth = self.users[auth]
-        else:
-            auth = self.communities["readCommunity"]
-        
-        objectRequestedList = [ObjectType(ObjectIdentity(mibName, column, *startIndex)) for column in columns]
-        if startIndex:
-            firstRow = getCmd(self.engine, auth, self.transport, self.context, *objectRequestedList)
-        iterator = bulkCmd(self.engine, auth, self.transport, self.context, 0, maxRepetitions, *objectRequestedList)
-
-        columnOidCheck = getOid(self.mibViewController, mibName, columns[0])
+        indexes = []
         result = []
         for count in range(maxRepetitions):
-            if startIndex and count == 0:
+            if includeFirst and count == 0:
                 row = next(firstRow)
             else:
                 row = next(iterator)
-            if not SnmpEngine.failedRequest(row):
-                varBinds = row[3]
-                if not str(varBinds[0][0]).startswith(str(columnOidCheck)):
-                    break
+
+            varBinds = self._extractResponse(row)
+            ok, index = check(varBinds)
+            if ok:
                 result.append(varBinds)
+                indexes.append(index)
             else:
                 break
-        
-        return { tableName : [formatter(self.mibViewController, row, format=format) for row in result] }
+        return result, indexes
 
 
-    def set(self, value, mibName, objectName, *instanceIdentifier, auth=None, format="default"):
-        if auth:
-            if auth in self.communities:
-                auth = self.communities[auth]
-            elif auth in self.users:
-                auth = self.users[auth]
-        else:
-            auth = self.communities["writeCommunity"]
-
-        instance = ObjectType(ObjectIdentity(mibName, objectName, *instanceIdentifier), value)
-        iterator = setCmd(self.engine, auth, self.transport, self.context, instance)
-
+    def setTableRow(self, instances, auth):
+        sess = self._getSession(auth, rw=True)
+        iterator = setCmd(self.engine, sess, self.transport, self.context, *instances)
         response = next(iterator)
-        if not SnmpEngine.failedRequest(response):
-            varBinds = response[3]
-            return formatter(self.mibViewController, varBinds, format=format)
-
-
-    def setTableRow(self, mibName, index, *args, auth=None, format="default"):
-        if auth:
-            if auth in self.communities:
-                auth = self.communities[auth]
-            elif auth in self.users:
-                auth = self.users[auth]
-        else:
-            auth = self.communities["writeCommunity"]
-        
-        instances = []
-        for arg in args:
-            column, value = arg
-            instances.append(ObjectType(ObjectIdentity(mibName, column, *index), value))
-        
-        iterator = setCmd(self.engine, auth, self.transport, self.context, *instances)
-
-        response = next(iterator)
-        if not SnmpEngine.failedRequest(response):
-            varBinds = response[3]
-            return formatter(self.mibViewController, varBinds, format=format)
+        return self._extractResponse(response)
     
 
     ######################################################################################
-    ################################## Response handlers #################################
+    ################################## Internal methods ##################################
     ######################################################################################
-    def failedRequest(response):
-        errorIndication, errorStatus, errorIndex, varBinds = response
+    def _getSession(self, auth, rw):
+        if auth:
+            if auth in self.communities:
+                session = self.communities[auth]
+            elif auth in self.users:
+                session = self.users[auth]
+        elif rw:
+            session = self.communities["writeCommunity"]
+        else:
+            session = self.communities["readCommunity"]
+        return session
+    
+
+    def _extractResponse(self, res):
+        errorIndication, errorStatus, errorIndex, varBinds = res
 
         if errorIndication:
             print(errorIndication)
-            return True
-
+            return
         elif errorStatus:
-            print('%s at %s' % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
-            return True
+            print('%s at %s' % (errorStatus.prettyPrint(), errorIndex and varBinds[int(errorIndex) - 1][0].prettyPrint() or '?'))
+            return
         
-        return False
-
-    def _extractAccessibleObjects(self, mibName, *args, auth=None):
-        accessibleObjects = []
-        for obj in args:
-            objOID = str(getOid(self.mibViewController, mibName, obj))
-            res = self.getNext(mibName, obj, auth=auth)
-            if not res:
-                break
-            resObjOID = str([*res.keys()][0].getOid())
-            if resObjOID.startswith(objOID):
-                accessibleObjects.append(obj)
-        return accessibleObjects
+        return varBinds
     
+
+    def _walkRecursive(self, scalar, sess):
+        mib, symb, index = scalar.getMibSymbol()
+        _, prevSymbol, _ = scalar.getParent().getMibSymbol()
+
+        lastScalar = scalar.getNext()
+        if not lastScalar:
+            print("No more instance in this view")
+            return None, None
+        _, nextSymb, _ = lastScalar.getMibSymbol()
+
+        if symb.endswith("Table") or prevSymbol.endswith("Table"):
+            if symb.endswith("Table"):
+                tableName = symb
+            else:
+                tableName = prevSymbol
+            resultIndex = MibNode(self, (mib, tableName))
+            result = Table(self, mib, tableName).pullData()
+            lastScalar = result.getNext()
+        
+        elif index or (symb == nextSymb):
+            if prevSymbol.endswith("Entry"):
+                _, tableName, _ = scalar.getParent().getParent().getMibSymbol()
+                resultIndex = MibNode(self, (mib, symb))
+                result = Table(self, mib, tableName).pullData(symb)
+                lastScalar = result.getNext()
+            else:
+                resultIndex = MibNode(self, (mib, symb))
+                result = lastScalar.get()
+                lastScalar = result.getNext()
+        
+        else:
+            if not scalar.isParent(lastScalar):
+                result = None
+            
+            else:
+                resultIndex = scalar
+                result = dict()
+                length = len(scalar)
+                nextScalar = lastScalar.getParent(length+1)
+                while nextScalar:
+                    subTree, lastScalar = self._walkRecursive(nextScalar, sess)
+                    if subTree:
+                        result.update(subTree)
+
+                    if scalar.isParent(lastScalar):
+                        nextScalar = lastScalar.getParent(length+1)
+                    else:
+                        nextScalar = None
+                    
+        return None if not result else { resultIndex : result }, lastScalar

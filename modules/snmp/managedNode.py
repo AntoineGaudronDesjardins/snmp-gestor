@@ -1,24 +1,23 @@
 from modules.snmp.snmpEngine import SnmpEngine
+from modules.snmp.mibNode import MibNode
 
 class ManagedNode:
     def __init__(self, ipAddress, snmpReadCommunity="public", snmpWriteComunity="private", credentials=None):
         self.snmpEngine = SnmpEngine(ipAddress, snmpReadCommunity, snmpWriteComunity, credentials)
         self.ipAddress = ipAddress
+        self.name = MibNode(self.snmpEngine, ('SNMPv2-MIB', 'sysName', 0)).get().print(symbol=False)
 
-    def getGlobalInfo(self, format="default"):
-        globalInfo = dict()
-        try:
-            globalInfo.update(self.snmpEngine.get('SNMPv2-MIB', 'sysName', 0, format=format))
-            globalInfo.update(self.snmpEngine.get('SNMPv2-MIB', 'sysDescr', 0, format=format))
-            globalInfo.update(self.snmpEngine.get('SNMPv2-MIB', 'sysLocation', 0, format=format))
-            globalInfo.update(self.snmpEngine.get('SNMPv2-MIB', 'sysContact', 0, format=format))
-            return globalInfo
-        except:
-            pass
+    def printGlobalInfo(self):
+        globalInfo = []
+        globalInfo.append(MibNode(self.snmpEngine, ('SNMPv2-MIB', 'sysName', 0)).get().print())
+        globalInfo.append(MibNode(self.snmpEngine, ('SNMPv2-MIB', 'sysLocation', 0)).get().print())
+        globalInfo.append(MibNode(self.snmpEngine, ('SNMPv2-MIB', 'sysContact', 0)).get().print())
+        globalInfo.append(MibNode(self.snmpEngine, ('SNMPv2-MIB', 'sysDescr', 0)).get().print())
+        return globalInfo
 
-    def setLocation(self, descr, format="default"):
-        return self.snmpEngine.set(descr, 'SNMPv2-MIB', 'sysLocation', 0, format=format)
+    def setLocation(self, descr):
+        return MibNode(self.snmpEngine, ('SNMPv2-MIB', 'sysLocation', 0)).set(descr)
 
-    def setContact(self, descr, format="default"):
-        return self.snmpEngine.set(descr, 'SNMPv2-MIB', 'sysContact', 0, format=format)
+    def setContact(self, descr):
+        return MibNode(self.snmpEngine, ('SNMPv2-MIB', 'sysContact', 0)).set(descr)
     

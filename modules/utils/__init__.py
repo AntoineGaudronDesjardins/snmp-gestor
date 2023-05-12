@@ -1,5 +1,5 @@
 from modules.utils.utils import *
-from modules.utils.instanceValue import InstanceValue
+from modules.utils.auxiliaryClasses import Instance, Entry, NamedBits
 
-__all__ = ["createMibViewController", "getOid", "getMibSymbol", "getMibLabel", "getMibNode",
-           "getTableColumns", "formatter", "InstanceValue"]
+__all__ = ["createMibViewController", "getOid", "getMibLabel", "getMibNode",
+           "formatter", "Instance", "Entry", "NamedBits"]

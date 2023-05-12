@@ -1,6 +1,7 @@
 from pysnmp.smi.builder import MibBuilder, DirMibSource
 from pysnmp.smi.view import MibViewController
 from pysnmp.smi.rfc1902 import ObjectIdentity
+import re
 import os
 
 
@@ -12,13 +13,10 @@ def createMibViewController():
     return mibViewController
 
 
-def getOid(mibViewController, *args, stringify=False):
+def getOid(mibViewController, *args):
     oid = ObjectIdentity(*args)
     oid.resolveWithMib(mibViewController)
-    res = oid.getOid()
-    if stringify:
-        res = str(res)
-    return res
+    return str(oid.getOid())
 
 
 def getMibSymbol(mibViewController, oid):
@@ -39,43 +37,61 @@ def getMibNode(mibViewController, oid):
     return oid.getMibNode()
 
 
-def getTableColumns(mibViewController, mibName, tableName):
-    tableOid = getOid(mibViewController, mibName, tableName)
-    columns = []
-    i = 0
-    while True:
-        i += 1
-        _, column, args = getMibSymbol(mibViewController, f"{tableOid}.1.{i}")
-        if args:
-            break
-        columns.append(column)
-    return columns
+def formatter(mibViewController, varBinds, format: str):
+    if (not format) or ((not ":" in format) and (not "," in format)):
+        return varBinds
+    
+    formatted = dict() if ":" in format else list()
+    for inst, val in varBinds:
+        inst = ObjectIdentity(str(inst))
+        inst.resolveWithMib(mibViewController)
+        instOID, instPretty = str(inst), inst.prettyPrint()
+        instMib, instSymbol, instIndex = getMibSymbol(mibViewController, instOID)
+        instIndex = [str(x) for x in instIndex]
+        
+        if isinstance(val, ObjectIdentity):
+            val.resolveWithMib(mibViewController)
+            valOID, valPretty = str(val), val.prettyPrint()
+            valMib, valSymbol, valIndex = getMibSymbol(mibViewController, valOID)
+            valIndex = [str(x) for x in valIndex]
+        else:
+            valOID = valMib = valSymbol = valIndex = valPretty = val.prettyPrint()                    
 
+        special_key_words = { "inst": inst, "val": val }
+        key_words = { "instOID": instOID, "instMib": instMib, "instSymbol": instSymbol, "instIndex": instIndex, "instPretty": instPretty,
+                     "valOID": valOID, "valMib": valMib, "valSymbol": valSymbol, "valIndex": valIndex, "valPretty": valPretty }
 
-def formatter(mibViewController, *varBinds, format="default"):
-    formatted = dict()
-    for varBind in varBinds:
-        for name, value in varBind:
-            _, nameSymbol, _ = getMibSymbol(mibViewController, str(name))
+        if ":" in format:
+            key_pattern, value_pattern = format.split(':')
+        else:
+            key_pattern, value_pattern = format.split(',')
+            
+        if key_pattern in special_key_words:
+            key_pattern = special_key_words[key_pattern]
+        if key_pattern in key_words:
+            key_pattern = key_words[key_pattern]
+            
+        if value_pattern in special_key_words:
+            value_pattern = special_key_words[value_pattern]
+        if value_pattern in key_words:
+            value_pattern = key_words[value_pattern]
 
-            if format == "default":
-                formatted[name] = value
+        for key, val in key_words.items():
+            if isinstance(key_pattern, str):
+                key_pattern = key_pattern.replace(key, str(val))
+            if isinstance(value_pattern, str):
+                value_pattern = value_pattern.replace(key, str(val))
 
-            elif format == "symbol":
-                formatted[nameSymbol] = value
+        if ":" in format:
+            formatted[key_pattern] = value_pattern
+        else:
+            formatted.append((key_pattern, value_pattern))
 
-            elif format == "pretty":
-                formatted[nameSymbol] = value.prettyPrint()
-
-            elif format == "valueOID":
-                if isinstance(value, ObjectIdentity):
-                    formatted[nameSymbol] = str(value)
-                else:
-                    formatted[nameSymbol] = value.prettyPrint()
-
-            elif format == "keyOID":
-                formatted[str(name)] = value
-                
-            else:
-                return varBinds
     return formatted
+
+
+def escapeChars(string, special_characters='._*#|~-=<>[]()\\', ignore=""):
+    special_characters = re.sub(rf'{ignore}', '', special_characters)
+    special_characters = rf'[{re.escape(special_characters)}]'
+    escaped_string = re.sub(special_characters, r'\\\g<0>', string)
+    return escaped_string

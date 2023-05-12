@@ -4,5 +4,5 @@ __pycache__/
 # Ignore python virtual environment
 env/
 
-# Ignore credentials
-credentials.py
+# Ignore conf file
+conf.py
