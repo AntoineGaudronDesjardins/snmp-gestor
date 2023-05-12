@@ -46,9 +46,11 @@ class Router(ManagedNode, Thread):
 
         ifTable = Table(self.snmpEngine, 'IF-MIB', 'ifTable').pullData('ifIndex', 'ifInOctets', 'ifOutOctets', 'ifInErrors', 'ifOutErrors', 'ifOperStatus')
         ifMetrics = {
-            'ifInErrors': int(ifInErrors),
-            'ifOutErrors': int(ifOutErrors),
-            'ifOperStatus': ifOperStatus,
+            IfIndex : {
+                'ifInErrors': int(ifInErrors),
+                'ifOutErrors': int(ifOutErrors),
+                'ifOperStatus': ifOperStatus,
+            } for IfIndex, _, _, ifInErrors, ifOutErrors, ifOperStatus in ifTable.values
         }
         
         while True:

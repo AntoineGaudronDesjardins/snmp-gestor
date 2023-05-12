@@ -84,7 +84,7 @@ class Bot(Thread):
                 devices = self._getDevices()
                 self.bot.sendMessage(self.chanID, "\n".join([f"{name} : {ip}" for name, ip in devices]))
 
-            elif cmd == '/getHealthMetrics':
+            elif cmd == '/gethealthmetrics':
                 if (not args) or (args[1] not in self.devices):
                     self.bot.sendMessage(chat_id, 'Tienes que dar la ip del equipo que quieres consultar como argumento. Puedes consultar los equipos registrados con el commando /devices. \nPor ejemplo: \n  /getHealthMetrics 10.10.10.3')
                     return
@@ -98,7 +98,7 @@ class Bot(Thread):
 
                 self.bot.sendMessage(chat_id=chat_id, text=respText)
 
-            elif cmd == '/getGlobalInfo':
+            elif cmd == '/getglobalinfo':
                 if (not args) or (args[1] not in self.devices):
                     self.bot.sendMessage(chat_id, 'Tienes que dar la ip del equipo que quieres consultar como argumento. Puedes consultar los equipos registrados con el commando /devices. \nPor ejemplo: \n  /getGlobalInfo 10.10.10.3')
                     return
