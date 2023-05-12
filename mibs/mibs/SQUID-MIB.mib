@@ -1,0 +1,437 @@
+SQUID-MIB  --{ iso org(3) dod(6) internet(1) private(4) enterprises(1) 3495 }
+
+DEFINITIONS ::= BEGIN
+--
+-- $Id: mib.txt,v 1.25 2000/05/16 07:06:05 wessels Exp $
+--
+
+IMPORTS
+	enterprises, Unsigned32, TimeTicks, Gauge32, Counter32, Integer32, IpAddress,
+	MODULE-IDENTITY, OBJECT-TYPE
+        	FROM SNMPv2-SMI
+
+	DisplayString
+        	FROM SNMPv2-TC;
+
+nlanr OBJECT IDENTIFIER ::= { enterprises 3495 }
+
+squid MODULE-IDENTITY
+    LAST-UPDATED "9809220000Z"
+    ORGANIZATION "National Laboratory for Applied Network Research"
+    CONTACT-INFO
+            "        Squid Developers
+
+             E-mail: squid@squid-cache.org"
+    DESCRIPTION
+		"Squid MIB defined for the management of the Squid
+		proxy server. See http://www.squid-cache.org/."
+	
+    REVISION      "9809220000Z"
+    DESCRIPTION
+		"Move to SMIv2. Prepare to split into proxy/squid."
+    REVISION      "9901010000Z"
+    DESCRIPTION
+		"Added objects and corrected asn.1 syntax and
+		descriptions."
+    ::= { nlanr 1 }
+
+--
+-- OID Assignments
+--
+
+	cacheSystem	OBJECT IDENTIFIER ::= { squid 1 }
+	cacheConfig  	OBJECT IDENTIFIER ::= { squid 2 }
+	cachePerf	OBJECT IDENTIFIER ::= { squid 3 }
+	cacheNetwork	OBJECT IDENTIFIER ::= { squid 4 }
+	cacheMesh	OBJECT IDENTIFIER ::= { squid 5 }
+
+
+--
+-- cacheSystem group
+--
+
+        cacheSysVMsize OBJECT-TYPE
+	        SYNTAX Integer32
+		MAX-ACCESS read-only
+		STATUS current
+		DESCRIPTION
+			" Storage Mem size in KB "
+	::= { cacheSystem 1 }
+
+	cacheSysStorage OBJECT-TYPE
+		SYNTAX Integer32
+		MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " Storage Swap size in KB "
+        ::= { cacheSystem 2 }
+
+	cacheUptime  OBJECT-TYPE
+                SYNTAX TimeTicks
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " The Uptime of the cache in timeticks "
+	::= { cacheSystem 3 }
+
+--
+-- config group
+--
+-- Contains configuration information including peers etc.
+--
+
+	cacheAdmin OBJECT-TYPE
+		SYNTAX DisplayString
+		MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " Cache Administrator E-Mail address "
+	::= { cacheConfig 1 }
+
+        cacheSoftware OBJECT-TYPE
+                SYNTAX DisplayString
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " Cache Software Name "
+        ::= { cacheConfig 2 }
+
+        cacheVersionId OBJECT-TYPE
+                SYNTAX OCTET STRING
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " Cache Software Version "
+        ::= { cacheConfig 3 }
+
+	cacheLoggingFacility OBJECT-TYPE
+		SYNTAX DisplayString
+		ACCESS read-write
+		STATUS current
+		DESCRIPTION
+			" Logging Facility. An informational string
+			  indicating logging info like debug level,
+			  local/syslog/remote logging etc "
+	::= { cacheConfig 4 }
+
+-- cacheStorageConfig group
+
+	cacheStorageConfig OBJECT IDENTIFIER ::= { cacheConfig 5 }
+
+	cacheMemMaxSize OBJECT-TYPE
+                SYNTAX Integer32
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " The value of the cache_mem parameter in MB "
+        ::= { cacheStorageConfig 1 }
+
+        cacheSwapMaxSize OBJECT-TYPE
+                SYNTAX Integer32
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " The total of the cache_dir space allocated in MB "
+        ::= { cacheStorageConfig 2 }
+
+        cacheSwapHighWM OBJECT-TYPE
+                SYNTAX Integer32
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " Cache Swap High Water Mark "
+        ::= { cacheStorageConfig 3 }
+
+        cacheSwapLowWM OBJECT-TYPE
+                SYNTAX Integer32
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " Cache Swap Low Water Mark "
+        ::= { cacheStorageConfig 4 }
+
+-- end of  cacheStorageConfig group
+
+--
+-- performance group { squid 3 }
+--
+
+	cacheSysPerf    OBJECT IDENTIFIER ::= { cachePerf 1 }
+        cacheProtoStats OBJECT IDENTIFIER ::= { cachePerf 2 }
+
+	--
+	-- cacheSysPerf
+	--
+
+        cacheSysPageFaults OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " Page faults with physical i/o "
+        ::= { cacheSysPerf 1 }
+
+        cacheSysNumReads OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS not-accessible
+                STATUS current
+                DESCRIPTION
+                        " HTTP I/O number of reads "
+       	::= { cacheSysPerf 2 }
+
+	cacheMemUsage OBJECT-TYPE
+		SYNTAX Integer32
+		MAX-ACCESS read-only
+		STATUS 	current
+		DESCRIPTION
+			" Total memory accounted for KB "
+	::= { cacheSysPerf 3 }
+
+	cacheCpuTime OBJECT-TYPE
+		SYNTAX Integer32
+		MAX-ACCESS read-only
+                STATUS  current
+                DESCRIPTION
+                        " Amount of cpu seconds consumed "
+	::= { cacheSysPerf 4 }
+
+	cacheCpuUsage OBJECT-TYPE
+                SYNTAX Integer32
+                MAX-ACCESS read-only
+                STATUS  current
+                DESCRIPTION
+                        " The percentage use of the CPU "
+        ::= { cacheSysPerf 5 }
+
+	cacheMaxResSize OBJECT-TYPE
+                SYNTAX Integer32
+                MAX-ACCESS read-only
+                STATUS  current
+                DESCRIPTION
+                        " Maximum Resident Size in KB "
+        ::= { cacheSysPerf 6 }
+
+	cacheNumObjCount OBJECT-TYPE
+                SYNTAX Counter32
+		MAX-ACCESS read-only
+                STATUS  current
+                DESCRIPTION
+                        " Number of objects stored by the cache "
+        ::= { cacheSysPerf 7 }
+
+        cacheCurrentLRUExpiration OBJECT-TYPE
+                SYNTAX TimeTicks
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+			" Storage LRU Expiration Age "
+        ::= { cacheSysPerf 8 }
+
+        cacheCurrentUnlinkRequests OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+			" Requests given to unlinkd "
+        ::= { cacheSysPerf 9 }
+
+        cacheCurrentUnusedFDescrCnt OBJECT-TYPE
+                SYNTAX Gauge32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+			" Available number of file descriptors "
+        ::= { cacheSysPerf 10 }
+
+	cacheCurrentResFileDescrCnt  OBJECT-TYPE
+                SYNTAX Gauge32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+			" Reserved number of file descriptors "
+        ::= { cacheSysPerf 11 }
+
+	--
+	-- cacheProtoStats
+	--
+
+		-- cacheProtoAggregateStats
+		--
+
+	cacheProtoAggregateStats OBJECT IDENTIFIER ::= { cacheProtoStats 1 }
+
+
+	cacheProtoClientHttpRequests  OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+			" Number of HTTP requests received "
+        ::= { cacheProtoAggregateStats 1 }
+
+        cacheHttpHits OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+			" Number of HTTP Hits "
+        ::= { cacheProtoAggregateStats 2 }
+
+        cacheHttpErrors OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+			" Number of HTTP Errors "
+        ::= { cacheProtoAggregateStats 3 }
+
+        cacheHttpInKb OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+			" Number of HTTP KB's recieved "
+        ::= { cacheProtoAggregateStats 4 }
+
+        cacheHttpOutKb OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " Number of HTTP KB's transmitted "
+        ::= { cacheProtoAggregateStats 5 }
+
+	cacheIcpPktsSent OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " Number of ICP messages sent "
+        ::= { cacheProtoAggregateStats 6 }
+
+	cacheIcpPktsRecv OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " Number of ICP messages received "
+        ::= { cacheProtoAggregateStats 7 }
+
+        cacheIcpKbSent OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " Number of ICP KB's transmitted "
+        ::= { cacheProtoAggregateStats 8 }
+
+        cacheIcpKbRecv OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " Number of ICP KB's recieved "
+        ::= { cacheProtoAggregateStats 9 }
+
+        cacheServerRequests OBJECT-TYPE
+                SYNTAX Integer32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " All requests from the client for the cache server "
+        ::= { cacheProtoAggregateStats 10 }
+
+        cacheServerErrors OBJECT-TYPE
+                SYNTAX Integer32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " All errors for the cache server from client requests "
+        ::= { cacheProtoAggregateStats 11 }
+
+	cacheServerInKb OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " KB's of traffic recieved from servers "
+        ::= { cacheProtoAggregateStats 12 }
+
+        cacheServerOutKb OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " KB's of traffic sent to servers "
+        ::= { cacheProtoAggregateStats 13 }
+
+	cacheCurrentSwapSize OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " Storage Swap size "
+        ::= { cacheProtoAggregateStats 14 }
+
+       cacheClients OBJECT-TYPE
+                SYNTAX Counter32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " Number of clients accessing cache "
+        ::= { cacheProtoAggregateStats 15 }
+
+	--
+	-- cacheProtoMedianSvcStats group
+	--
+	-- This is a table, indexed by the interval we want statistics for
+	-- Example: cacheDnsSvcTime.10 gives 10-min medians for Dns Service Time.
+
+	cacheMedianSvcTable OBJECT-TYPE
+                SYNTAX SEQUENCE OF CacheMedianSvcEntry
+                MAX-ACCESS read-only
+                STATUS current
+                DESCRIPTION
+                        " CacheMedianSvcTable "
+	::= { cacheProtoStats 2 }
+
+        cacheMedianSvcEntry OBJECT-TYPE
+                SYNTAX CacheMedianSvcEntry
+                MAX-ACCESS not-accessible
+                STATUS current
+                DESCRIPTION
+                        " An entry in cacheMedianSvcTable "
+                INDEX   { cacheMedianTime }
+        ::= { cacheMedianSvcTable 1 }
+
+        CacheMedianSvcEntry ::= SEQUENCE {
+		cacheMedianTime		Integer32,
+		cacheHttpAllSvcTime 	Integer32,
+		cacheHttpMissSvcTime 	Integer32,	
+		cacheHttpNmSvcTime 	Integer32,
+		cacheHttpHitSvcTime 	Integer32,
+		cacheIcpQuerySvcTime 	Integer32,
+		cacheIcpReplySvcTime 	Integer32,
+		cacheDnsSvcTime		Integer32,
+		cacheRequestHitRatio	Integer32,
+		cacheRequestByteRatio	Integer32
+	}
+
+	cacheMedianTime OBJECT-TYPE
+                SYNTAX Integer32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " The value used to index the table 1/5/60"
+        ::= { cacheMedianSvcEntry 1 }
+
+	cacheHttpAllSvcTime OBJECT-TYPE
+                SYNTAX Integer32
+                MAX-ACCESS read-only
+                STATUS current
+		DESCRIPTION
+                        " HTTP all service time "
+        ::= { cacheMedianSvcEntry 2 }
+
+	cacheHttpMissSvcTime OBJECT-TYPE
+            

@@ -16,5 +16,10 @@ switchConfig = {
     },
 }
 
+routerConfig = {
+    "ip": "XX.XX.XX.XX",
+    "community": "public",
+}
+
 ###################################### TELEGRAM BOT CONFIGURATION #######################################
 TOKEN = "0000000000:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"

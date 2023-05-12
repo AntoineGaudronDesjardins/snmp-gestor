@@ -44,6 +44,25 @@ class Bot(Thread):
         msg = f'*Alerta de "{name}" \({ipAddress}\)*: \n\n{data}'
 
         self.bot.sendMessage(self.chanID, msg, parse_mode='MarkdownV2')
+    
+
+    def sendAlert(self, ip, title, desc, *vars):
+        if ip in self.devices:
+            if self.devices[ip].name:
+                name = self.devices[ip].name
+            else:
+                name = "sin nombre"
+        else:
+            name = "desconocido"
+        ip = escapeChars(ip)
+        name = escapeChars(name)
+        title = escapeChars(title)
+        desc = escapeChars(desc)
+        data = "\n".join([var for var in vars])
+        data = escapeChars(data)
+        msg = f'"{name}" \({ip}\): *{title}*\n\n{desc}\n\n{data}'
+
+        self.bot.sendMessage(self.chanID, msg, parse_mode='MarkdownV2')
 
     
     ######################################################################################
@@ -95,9 +114,12 @@ class Bot(Thread):
         if query_data[0] == 'Switch':
             self.switchHandler(msg_identifier, query_id, query_data[1:])
 
+        if query_data[0] == 'Router':
+            self.routerHandler(msg_identifier, query_id, query_data[1:])
+
     
     ######################################################################################
-    ############################## Device specific methods ###############################
+    ############################ Switch interactive session ##############################
     ######################################################################################
     def switchHandler(self, msg_identifier, query_id, query_data):
 
@@ -223,6 +245,72 @@ class Bot(Thread):
             keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
 
             self.bot.editMessageText(msg_identifier, event, parse_mode='MarkdownV2', reply_markup=keyBoard)
+
+    
+    ######################################################################################
+    ############################ Router interactive session ##############################
+    ######################################################################################
+    def routerHandler(self, msg_identifier, query_id, query_data):
+
+        if query_data[0] == 'ip':
+            ip = query_data[1]
+            keyBoard = [
+                [InlineKeyboardButton(text='Informacion global', callback_data=f'Router&info&{ip}')],
+                [InlineKeyboardButton(text='Metricas de estado', callback_data=f'Router&health&{ip}')],
+                [InlineKeyboardButton(text='Gestion de las alarmas', callback_data=f'Router&alerts&{ip}')],
+                [InlineKeyboardButton(text="<< volver", callback_data="devices")]
+            ]
+            keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
+            self.bot.editMessageText(msg_identifier, 'Que quieres hacer :', reply_markup=keyBoard)
+
+        elif query_data[0] == 'info':
+            ip = query_data[1]
+            device = self.devices[ip]
+            
+            info = "\n".join(device.printGlobalInfo())
+            info = escapeChars(info)
+            ipAddr = escapeChars(ip)
+            msg = f'*__Informacion de {ipAddr}__*: \n\n{info}'
+
+            keyBoard = [[InlineKeyboardButton(text="<< volver", callback_data=f"Router&ip&{ip}")]]
+            keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
+
+            self.bot.editMessageText(msg_identifier, msg, parse_mode='MarkdownV2', reply_markup=keyBoard)
+            
+        elif query_data[0] == "health":
+            ip = query_data[1]
+            device = self.devices[ip]
+            
+            metrics = "\n".join(device.printHealthMetrics())
+            metrics = escapeChars(metrics, ignore="_")
+            name = escapeChars(device.name)
+            respText = f'*__Actividad de {name}__* \n\n{metrics}'
+
+            keyBoard = [[InlineKeyboardButton(text="<< volver", callback_data=f"Router&ip&{ip}")]]
+            keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
+
+            self.bot.editMessageText(msg_identifier, respText, parse_mode='MarkdownV2', reply_markup=keyBoard)
+
+        elif query_data[0] == "alerts":
+            ip = query_data[1]
+            device = self.devices[ip]
+            triggers = device.getTriggersState()
+            if len(query_data) > 2:
+                trigger = query_data[2]
+                if triggers[trigger]:
+                    device.disableTrigger(trigger)
+                    self.bot.answerCallbackQuery(query_id, text=f'Alarma desactivada')
+                else:
+                    device.enableTrigger(trigger)
+                    self.bot.answerCallbackQuery(query_id, text=f'Alarma activada')
+
+            keyBoard = [
+                [InlineKeyboardButton(text=f'{name} : {"activada" if state else "desactivada"}', callback_data=f'Router&alerts&{ip}&{name}')] for name, state in triggers.items()
+            ]
+            keyBoard.append([InlineKeyboardButton(text="<< volver", callback_data=f'Router&{ip}')])
+            keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
+
+            self.bot.editMessageText(msg_identifier, 'Puedes activar/desactivar las siguientes alarmas:', reply_markup=keyBoard)
 
     
     ######################################################################################
