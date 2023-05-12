@@ -1,12 +1,12 @@
 from modules.devices.switch.switchTrapConfig import switchTrapConfig, mteTriggerTest
 from modules.snmp import ManagedNode, Table, MibNode
 from modules.utils import Entry
-from conf import switchCredentials
+from conf import switchConfig
 
 
 class Switch(ManagedNode):
     def __init__(self, ipAddress):
-        ManagedNode.__init__(self, ipAddress, credentials=switchCredentials)
+        ManagedNode.__init__(self, ipAddress, credentials=switchConfig["credentials"])
         self.__name__ = 'Switch'
 
 

@@ -4,12 +4,15 @@ from pysnmp.hlapi import usmHMACMD5AuthProtocol, usmHMACSHAAuthProtocol, usmHMAC
 ## Available privacy protocols:
 from pysnmp.hlapi import usmDESPrivProtocol, usm3DESEDEPrivProtocol, usmAesCfb128Protocol, usmAesCfb192Protocol, usmAesCfb256Protocol, usmNoPrivProtocol
 
-credentials = {
-    "username" : {
-        "authKey": "password",
-        "authProtocol": usmHMACSHAAuthProtocol,
-        "privKey": "password",
-        "privProtocol": usmAesCfb128Protocol,
+switchConfig = {
+    "ip": "XX.XX.XX.XX",
+    "credentials": {
+        "username" : {
+            "authKey": "password",
+            "authProtocol": usmHMACSHAAuthProtocol,
+            "privKey": "password",
+            "privProtocol": usmAesCfb128Protocol,
+        },
     },
 }
 

@@ -1,14 +1,14 @@
 from modules.devices import Switch
 from modules.snmp import TrapListener
 from modules.bot import Bot
-from conf import TOKEN
+from conf import TOKEN, switchConfig
 
 
 def main():
     print("Starting app...")
     # Declare monitored devices
-    switch = Switch('192.168.31.10')
-    # switch.resetTrapConfig()
+    switch = Switch(switchConfig['ip'])
+    switch.resetTrapConfig()
     # Initalize bot
     bot = Bot(TOKEN)
     bot.addMonitoredDevices(switch)
