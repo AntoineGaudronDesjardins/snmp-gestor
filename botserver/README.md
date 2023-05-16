@@ -2,7 +2,7 @@
 
 # Descripción del proyecto
 
-Este repositorio contiene el proceso que se ejecutará como gestor SNMP para la monitorizacion de la red, utilizando la biblioteca pysnmp de Python. Parece que pysnmp puede tener unos problemas de compatibilidad : lo mejor es utilizar python3. Si se arranca el proceso en windows, a veces tambien pysnmp da errores un poco raro, sin embargo yo lo he hecho todo en Windows asi que deberia funcionar.
+Este repositorio contiene el proceso que se ejecutará como gestor SNMP para la monitorizacion de la red. Utiliza la libreria pysnmp de Python para las peticiones y los traps snmp, y la libreria telepot para interactuar con la api Telegram.
 
 
 # Estructura del proyecto
@@ -18,10 +18,7 @@ La carpeta `_pysnmp_example` contiene plantillas recuperadas en la pagina web de
 ```
 gestor-snmp/
 │   README.md
-│   main.py   
-│
-└── _pysnmp_example/
-│   └   ...
+│   main.py
 │
 └── mibs/
 │   │   *.py
@@ -36,13 +33,30 @@ gestor-snmp/
 │   
 └── modules/
     │
-    └── utils/
-    │   │   managedNode.py
-    │   │   snmpEngine.py
-    │   └   trapListener.py
+    └── bot/
+    │   └   bot.py
     │
     └── devices/
-        └   switch.py
+    │   └── equipoFinal/
+    │   │   └   equipo.py
+    │   │ 
+    │   └── router/
+    │   │   └   router.py
+    │   │ 
+    │   └── switch/
+    |       |   switch.py
+    │       └   switchTrapConfig.py
+    │
+    └── snmp/
+    │   │   managedNode.py
+    │   │   snmpEngine.py
+    │   |   trapListener.py
+    │   │   mibNode.py
+    │   └   table.py
+    │
+    └── utils/
+        │   auxiliaryClasses.py
+        └   utils.py
 ```
 
 # Compilación de las MIBs
@@ -59,4 +73,4 @@ Este comando compilará todas las MIB que se encuentren en la carpeta `mibs/mibs
 
 # Ejecución de la aplicación
 
-Para ejecutar la aplicación, se debe importar las librerias necesarias ejecutando `pip install -r requirements.txt`. Una vez las dependencias importadas, simplemente ejecutar el archivo `main.py`.
+Para ejecutar la aplicación, se debe importar las librerias necesarias ejecutando `pip install -r requirements.txt`. Una vez las dependencias importadas, se debe crear un fichero de configuracion `conf.py` a la raiz del proyecto siguiendo la plantilla `conf.template.py`. Finalment se debe ejecutar el fichero `main.py`.

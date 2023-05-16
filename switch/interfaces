@@ -1,0 +1,43 @@
+#
+# Network configuration for the switch
+#
+
+# Static config for eth0
+auto eth0
+iface eth0 inet static
+        address 10.10.10.11
+        netmask 255.255.255.0
+        gateway 10.10.10.1
+        up echo nameserver 8.8.8.8 > /etc/resolv.conf
+
+# Static config for eth1
+auto eth1
+iface eth1 inet static
+        address 10.10.10.10
+        netmask 255.255.255.0
+        gateway 10.10.10.1
+        up echo nameserver 8.8.8.8 > /etc/resolv.conf
+
+# Static config for eth2
+auto eth2
+iface eth2 inet static
+        address 10.10.10.12
+        netmask 255.255.255.0
+        gateway 10.10.10.1
+        up echo nameserver 8.8.8.8 > /etc/resolv.conf
+
+# Static config for eth3
+auto eth3
+iface eth3 inet static
+      address 10.10.10.13
+      netmask 255.255.255.0
+      gateway 10.10.10.1
+      up echo nameserver 8.8.8.8 > /etc/resolv.conf
+
+# Static config for eth4
+auto eth4
+iface eth4 inet static
+      address 10.10.10.14
+      netmask 255.255.255.0
+      gateway 10.10.10.1
+      up echo nameserver 8.8.8.8 > /etc/resolv.conf
