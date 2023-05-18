@@ -2,7 +2,7 @@ FROM ubuntu:22.10
 
 # Install the snmp agent
 RUN apt-get update && \
-    apt-get install -y snmpd snmp-mibs-downloader openssh-server rsyslog sudo
+    apt-get install -y snmpd snmp-mibs-downloader openssh-server rsyslog sudo vim net-tools
 RUN rm /usr/share/snmp/mibs/ietf/SNMPv2-PDU
 
 # Load configuration files and custom scripts

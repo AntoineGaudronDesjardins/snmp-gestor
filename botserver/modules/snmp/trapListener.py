@@ -72,13 +72,20 @@ class TrapListener(Thread):
                 else:
                     varBinds = pMod.apiPDU.getVarBinds(reqPDU)
 
-                print('Var-binds:')
                 varBinds = [MibNode(None, ObjectType(ObjectIdentity(varBind[0]), varBind[1]), self.mibViewController) for varBind in varBinds]
-                for varBind in varBinds:
-                    print(varBind)
-                print('\n')
+                if varBinds[0].value < 12000:
+                    print('Device starting')
+                else:
+                    if len(varBinds) > 2:
+                        varBinds[1:] = varBinds[2:]
+                    else:
+                        return
+                    print('Var-binds:')
+                    for varBind in varBinds:
+                        print(varBind)
+                    print('\n')
 
-                if self.bot:
-                    self.bot.forwardTrap(transportAddress[0], varBinds)
+                    if self.bot:
+                        self.bot.forwardTrap(transportAddress[0], varBinds)
 
         return msg

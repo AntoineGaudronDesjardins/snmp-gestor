@@ -19,7 +19,7 @@ def main():
     router.registerBot(bot)
     equipo.registerBot(bot)
     # Launch trap listener and devices pulling
-    switch.resetTrapConfig()
+    # switch.resetTrapConfig()
     trapListener.start()
     equipo.start()
     router.start()

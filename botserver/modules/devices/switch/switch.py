@@ -43,28 +43,28 @@ class Switch(ManagedNode):
 
 
     def enableTrigger(self, index):
-        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteTriggerEnabled', 'antoine', index)).set('true', auth='antoine')
+        return MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteTriggerEnabled', 'antoine', index)).set('true', auth='antoine').ok
 
 
     def enableEvent(self, index):
-        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteEventEnabled', 'antoine', index)).set('true', auth='antoine')
-    
+        return MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteEventEnabled', 'antoine', index)).set('true', auth='antoine').ok
+
 
     def enableAuthenticationFailureTrap(self):
-        MibNode(self.snmpEngine, ('SNMPv2-MIB', 'snmpEnableAuthenTraps', 0)).set('enabled', auth='antoine')
+        return MibNode(self.snmpEngine, ('SNMPv2-MIB', 'snmpEnableAuthenTraps', 0)).set('enabled', auth='antoine').ok
 
 
     def disableTrigger(self, index):
-        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteTriggerEnabled', 'antoine', index)).set('false', auth='antoine')
+        return MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteTriggerEnabled', 'antoine', index)).set('false', auth='antoine').ok
 
 
     def disableEvent(self, index):
-        MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteEventEnabled', 'antoine', index)).set('false', auth='antoine')
-    
+        return MibNode(self.snmpEngine, ('DISMAN-EVENT-MIB', 'mteEventEnabled', 'antoine', index)).set('false', auth='antoine').ok
+
 
     def disableAuthenticationFailureTrap(self):
-        MibNode(self.snmpEngine, ('SNMPv2-MIB', 'snmpEnableAuthenTraps', 0)).set('disabled', auth='antoine')
-
+        return MibNode(self.snmpEngine, ('SNMPv2-MIB', 'snmpEnableAuthenTraps', 0)).set('disabled', auth='antoine').ok
+    
 
     ######################################################################################
     ################################## Internal methods ##################################
@@ -79,8 +79,7 @@ class Switch(ManagedNode):
 
                 for index, varBinds in zip(newRow.indexes, newRow.args):
                     print('Creating new entry...')
-                    newRow = table.setRow(index, varBinds, auth='antoine')
-                    if not newRow: 
+                    if not table.setRow(index, varBinds, auth='antoine').ok:
                         print(f'Failed to create new entry in table {tableName}')
 
             print(f'Table {tableName} has been updated')
@@ -100,8 +99,10 @@ class Switch(ManagedNode):
 
         def clearDismanTable(tableName, controlColumn):
             table = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', tableName)
-            table.setColumn(controlColumn, 'destroy', auth='antoine')
-            print(f'Table {tableName} has been deleted')
+            if table.setColumn(controlColumn, 'destroy', auth='antoine').ok:
+                print(f'Table {tableName} has been deleted')
+            else:
+                print(f'Failed to delete table {tableName}')
         
         clearDismanTable('mteTriggerTable', 'mteTriggerEntryStatus')
         clearDismanTable('mteEventTable', 'mteEventEntryStatus')
@@ -112,8 +113,10 @@ class Switch(ManagedNode):
 
         def activateDismanTable(tableName, controlColumn):
             table = Table(self.snmpEngine, 'DISMAN-EVENT-MIB', tableName)
-            table.setColumn(controlColumn, 'active', auth='antoine')
-            print(f'Table {tableName} has been activated')
+            if table.setColumn(controlColumn, 'active', auth='antoine').ok:
+                print(f'Table {tableName} has been activated')
+            else:
+                print(f'Failed to activate table {tableName}')
         
         activateDismanTable('mteObjectsTable', 'mteObjectsEntryStatus')
         activateDismanTable('mteEventTable', 'mteEventEntryStatus')

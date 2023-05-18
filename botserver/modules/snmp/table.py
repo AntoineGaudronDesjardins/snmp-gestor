@@ -11,21 +11,35 @@ class Table:
         self.columns = []
         self.indexes = []
         self.rows = []
+        self.querySuccess = False
+    
+
+    @property
+    def values(self):
+        return [[varBind[1].prettyPrint() for varBind in row] for row in self.rows]
+    
+    
+    @property
+    def ok(self):
+        return self.querySuccess
     
 
     ######################################################################################
     ############################### Data specific methods ################################
     ######################################################################################
     def pullData(self, *columns, startIndex=(), maxRepetitions=1000, auth=None):
-        self.columns = []
-        self.indexes = []
-        self.rows = []
-        self.columns = self._getAllColumns(columns)
+        self.columns = columns if columns else self._getAllColumns()
+        self.querySuccess = False
 
         includeFirst = (startIndex != ())
-        mibName, _, _ = self.ref[0].getMibSymbol()
+        mibName, _, _ = self.ref.getMibSymbol()
         reqColumns = [ObjectType(ObjectIdentity(mibName, column, *startIndex)) for column in self.columns]
-        self.rows, self.indexes = self.engine.getTable(reqColumns, maxRepetitions, auth, includeFirst, self._check)
+        rows, indexes = self.engine.getTable(reqColumns, maxRepetitions, auth, includeFirst, self._check)
+        if rows and indexes:
+            self.indexes = indexes
+            self.rows = rows
+            self.querySuccess = True
+        
         return self
 
     
@@ -42,39 +56,63 @@ class Table:
         
     
     def getNext(self, auth=None):
+        self.querySuccess = False
         last = self.rows[-1][-1]
         varBind = self.engine.getNext(last, auth)
         if varBind:
+            self.querySuccess = True
             return MibNode(self.engine, varBind)
 
 
     def setRow(self, index, varBinds, auth=None):
-        mib, _, _ = self.ref[0].getMibSymbol()
+        self.querySuccess = False
+        mib, _, _ = self.ref.getMibSymbol()
         instances = [ObjectType(ObjectIdentity(mib, col, *index), val) for col, val in varBinds]
         newRow = self.engine.setTableRow(instances, auth)
         if newRow:
+            self.querySuccess = True
             if index in self.indexes:
                 i = self.indexes.index(index)
                 self.rows[i] = newRow
             else:
                 self.indexes.append(index)
                 self.rows.append(newRow)
-            return self
+        return self
 
     
     def setColumn(self, column, value, auth=None):
-        mib, _, _ = self.ref[0].getMibSymbol()
+        self.querySuccess = False
+        mib, _, _ = self.ref.getMibSymbol()
         if not(self.indexes):
             self.pullData()
         instances = [ObjectType(ObjectIdentity(mib, column, *index), value) for index in self.indexes]
         newRow = self.engine.setTableRow(instances, auth)
-        if newRow and (column in self.columns):
-            self.pullData(*self.columns)
-    
+        if newRow:
+            self.querySuccess = True
+            if column in self.columns:
+                self.refresh()
+        return self
 
-    @property
-    def values(self):
-        return [[varBind[1].prettyPrint() for varBind in row] for row in self.rows]
+
+    def refresh(self, auth=None):
+        self.querySuccess = False
+
+        mibName, _, _ = self.ref.getMibSymbol()
+        rows = []
+        indexes = []
+        for i, index in enumerate(self.indexes):
+            request = [ObjectType(ObjectIdentity(mibName, column, *index)) for column in self.columns]
+            row, index = self.engine.getTable(request, maxRepetitions=1, auth=auth, includeFirst=True, check=self._check)
+            if len(row)==1 and len(index)==1:
+                rows.append(row[0])
+                indexes.append(index[0])
+        
+        if rows and indexes:
+            self.indexes = indexes
+            self.rows = rows
+            self.querySuccess = True
+        
+        return self
 
 
     ######################################################################################
@@ -89,7 +127,7 @@ class Table:
     
 
     def print(self, index=True, header=True):
-        _, tableName, _ = self.ref[0].getMibSymbol()
+        _, tableName, _ = self.ref.getMibSymbol()
         if not self.rows:
             return f"Table {tableName} is empty"
         
@@ -138,24 +176,23 @@ class Table:
     ######################################################################################
     ################################## Internals methods #################################
     ######################################################################################
-    def _getAllColumns(self, columns, auth=None):
-        if not columns:
-            tableOid = self.ref["oid"]
-            columns = []
-            index = 1
-            args = None
-            while not args:
-                scalar = MibNode(self.engine, f"{tableOid}.1.{index}")
-                _, column, args = scalar.getMibSymbol()
-                if args:
-                    continue
-                index+=1
-                
-                nextScalar = scalar.getNext(auth)
-                if not nextScalar:
-                    break
-                elif scalar.isParent(nextScalar):
-                    columns.append(column)
+    def _getAllColumns(self, auth=None):
+        tableOid = self.ref.oid
+        columns = []
+        index = 1
+        args = None
+        while not args:
+            scalar = MibNode(self.engine, f"{tableOid}.1.{index}")
+            _, column, args = scalar.getMibSymbol()
+            if args:
+                continue
+            index+=1
+            
+            nextScalar = scalar.getNext(auth)
+            if not nextScalar:
+                break
+            elif scalar.isParent(nextScalar):
+                columns.append(column)
         return columns
     
 

@@ -30,11 +30,9 @@ class Bot(Thread):
 
     
     def forwardTrap(self, ipAddress, varBinds):
+        ipAddress ='10.10.10.10'
         if ipAddress in self.devices:
-            if self.devices[ipAddress].name:
-                name = self.devices[ipAddress].name
-            else:
-                name = "sin nombre"
+            name = self.devices[ipAddress].name
         else:
             name = "desconocido"
         name = escapeChars(name)
@@ -48,10 +46,7 @@ class Bot(Thread):
 
     def sendAlert(self, ip, title, desc, *vars):
         if ip in self.devices:
-            if self.devices[ip].name:
-                name = self.devices[ip].name
-            else:
-                name = "sin nombre"
+            name = self.devices[ip].name
         else:
             name = "desconocido"
         ip = escapeChars(ip)
@@ -69,26 +64,24 @@ class Bot(Thread):
     ################################ Interaction methods #################################
     ######################################################################################
     def handleMessage(self, msg):
-        content_type, chat_type, chat_id = glance(msg)
-        print(chat_type)
+        _, _, chat_id = glance(msg)
         
         if msg['entities'][0]['type'] == 'bot_command':
             cmd, *args = msg['text'].split(' ')
 
             if cmd == '/interactive':
-                keyBoard = [[InlineKeyboardButton(text=f"{device.name or 'sin nombre'}\n({ip})", callback_data=f"{device.__name__}&ip&{ip}")] for ip, device in self.devices.items()]
+                keyBoard = [[InlineKeyboardButton(text=f"{device.name}\n({ip})", callback_data=f"ip&{ip}")] for ip, device in self.devices.items()]
                 keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
                 self.bot.sendMessage(chat_id, 'Seleciona el equipo :', reply_markup=keyBoard)
 
             elif cmd == '/devices':
-                devices = self._getDevices()
-                self.bot.sendMessage(self.chanID, "\n".join([f"{name} : {ip}" for name, ip in devices]))
+                self.bot.sendMessage(self.chanID, "\n".join([f"{device.name} : {ip}" for ip, device in self.devices.items()]))
 
             elif cmd == '/gethealthmetrics':
-                if (not args) or (args[1] not in self.devices):
+                if (not args) or not (args[0] in self.devices):
                     self.bot.sendMessage(chat_id, 'Tienes que dar la ip del equipo que quieres consultar como argumento. Puedes consultar los equipos registrados con el commando /devices. \nPor ejemplo: \n  /getHealthMetrics 10.10.10.3')
                     return
-                ip = args[1]
+                ip = args[0]
                 device = self.devices[ip]
                 
                 metrics = "\n".join(device.printHealthMetrics())
@@ -96,13 +89,13 @@ class Bot(Thread):
                 name = escapeChars(device.name)
                 respText = f'*__Actividad de {name}__* \n\n{metrics}'
 
-                self.bot.sendMessage(chat_id=chat_id, text=respText)
+                self.bot.sendMessage(chat_id=chat_id, text=respText, parse_mode='MarkdownV2')
 
             elif cmd == '/getglobalinfo':
-                if (not args) or (args[1] not in self.devices):
+                if (not args) or not (args[0] in self.devices):
                     self.bot.sendMessage(chat_id, 'Tienes que dar la ip del equipo que quieres consultar como argumento. Puedes consultar los equipos registrados con el commando /devices. \nPor ejemplo: \n  /getGlobalInfo 10.10.10.3')
                     return
-                ip = args[1]
+                ip = args[0]
                 device = self.devices[ip]
                 
                 info = "\n".join(device.printGlobalInfo())
@@ -110,7 +103,7 @@ class Bot(Thread):
                 ipAddr = escapeChars(ip)
                 msg = f'*__Informacion de {ipAddr}__*: \n\n{info}'
 
-                self.bot.sendMessage(chat_id=chat_id, text=respText)
+                self.bot.sendMessage(chat_id=chat_id, text=msg, parse_mode='MarkdownV2')
 
 
     def handleCallback(self, msg):
@@ -119,7 +112,7 @@ class Bot(Thread):
         query_data = query_data.split("&")
 
         if query_data[0] == 'devices':
-            keyBoard = [[InlineKeyboardButton(text=f"{device.name or 'sin nombre'}\n({ip})", callback_data=f"ip&{ip}")] for ip, device in self.devices]
+            keyBoard = [[InlineKeyboardButton(text=f"{device.name}\n({ip})", callback_data=f"ip&{ip}")] for ip, device in self.devices.items()]
             keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
             self.bot.editMessageText(msg_identifier, 'Seleciona el equipo :', reply_markup=keyBoard)
 
@@ -180,7 +173,7 @@ class Bot(Thread):
             keyBoard = [
                 [InlineKeyboardButton(text='Alarmas', callback_data=f'Switch&triggers&{ip}')],
                 [InlineKeyboardButton(text='Eventos', callback_data=f'Switch&events&{ip}')],
-                [InlineKeyboardButton(text="<< volver", callback_data=f"Switch&ip&{ip}")]
+                [InlineKeyboardButton(text="<< volver", callback_data=f"ip&{ip}")]
             ]
             keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
             self.bot.editMessageText(msg_identifier, 'Que quieres gestionar :', reply_markup=keyBoard)
@@ -217,11 +210,15 @@ class Bot(Thread):
             index = query_data[2]
             if len(query_data) > 3:
                 if query_data[3] == "True":
-                    device.enableTrigger(index)
-                    self.bot.answerCallbackQuery(query_id, text=f'Alarma activada')
+                    if device.enableTrigger(index):
+                        self.bot.answerCallbackQuery(query_id, text=f'Alarma activada')
+                    else:
+                        self.bot.answerCallbackQuery(query_id, text=f'No se ha conseguido activar la alarma')
                 else:
-                    device.disableTrigger(index)
-                    self.bot.answerCallbackQuery(query_id, text=f'Alarma desactivada')
+                    if device.disableTrigger(index):
+                        self.bot.answerCallbackQuery(query_id, text=f'Alarma desactivada')
+                    else:
+                        self.bot.answerCallbackQuery(query_id, text=f'No se ha conseguido desactivar la alarma')
 
             trigger, enabled = device.getTrigger(index)
             trigger = escapeChars(trigger.print(), ignore="_")
@@ -241,19 +238,23 @@ class Bot(Thread):
             index = query_data[2]
             if len(query_data) > 3:
                 if query_data[3] == "True":
-                    device.enableEvent(index)
-                    self.bot.answerCallbackQuery(query_id, text=f'Evento activado')
+                    if device.enableEvent(index):
+                        self.bot.answerCallbackQuery(query_id, text=f'Evento activado')
+                    else:
+                        self.bot.answerCallbackQuery(query_id, text=f'No se ha conseguido activar el evento')
                 else:
-                    device.disableEvent(index)
-                    self.bot.answerCallbackQuery(query_id, text=f'Evento desactivado')
+                    if device.disableEvent(index):
+                        self.bot.answerCallbackQuery(query_id, text=f'Evento desactivado')
+                    else:
+                        self.bot.answerCallbackQuery(query_id, text=f'No se ha conseguido desactivar el evento')
 
-            event, enabled = device.getTrigger(index)
+            event, enabled = device.getEvent(index)
             event = escapeChars(event.print(), ignore="_")
             state = "desactivar" if enabled else "activar"
             
             keyBoard = [
                 [InlineKeyboardButton(text=state, callback_data=f"Switch&event&{ip}&{index}&{not enabled}")],
-                [InlineKeyboardButton(text="<< volver", callback_data=f"Switch&triggers&{ip}")],
+                [InlineKeyboardButton(text="<< volver", callback_data=f"Switch&events&{ip}")],
             ]
             keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
 
@@ -261,7 +262,7 @@ class Bot(Thread):
 
     
     ######################################################################################
-    ############################ Router interactive session ##############################
+    ################################ Manage pulling alerts ###############################
     ######################################################################################
     def customHandler(self, msg_identifier, query_id, query_data):
 
@@ -281,7 +282,7 @@ class Bot(Thread):
             keyBoard = [
                 [InlineKeyboardButton(text=f'{name} : {"activada" if state else "desactivada"}', callback_data=f'Router&alerts&{ip}&{name}')] for name, state in triggers.items()
             ]
-            keyBoard.append([InlineKeyboardButton(text="<< volver", callback_data=f'Router&{ip}')])
+            keyBoard.append([InlineKeyboardButton(text="<< volver", callback_data=f'ip&{ip}')])
             keyBoard = InlineKeyboardMarkup(inline_keyboard=keyBoard)
 
             self.bot.editMessageText(msg_identifier, 'Puedes activar/desactivar las siguientes alarmas:', reply_markup=keyBoard)
@@ -294,7 +295,3 @@ class Bot(Thread):
         # Keep the bot running
         while True:
             sleep(10)
-
-    
-    def _getDevices(self):
-        return [(device.name if device.name else 'sin nombre', ip) for ip, device in self.devices.items()]

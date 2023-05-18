@@ -11,7 +11,7 @@ from pysnmp.hlapi import getCmd, nextCmd, bulkCmd, setCmd
 class SnmpEngine:
     def __init__(self, agentIpAddress, readCommunity, writeCommunity, credentials):
         self.engine = Engine()
-        self.transport = UdpTransportTarget((agentIpAddress, 161))
+        self.transport = UdpTransportTarget((agentIpAddress, 161), timeout=10, retries=5)
         self.context = ContextData()
 
         # Default communities
@@ -178,8 +178,11 @@ class SnmpEngine:
                     if subTree:
                         result.update(subTree)
 
-                    if scalar.isParent(lastScalar):
-                        nextScalar = lastScalar.getParent(length+1)
+                    if not lastScalar:
+                        print("No more instance in this view")
+                        nextScalar = None
+                    elif scalar.isParent(lastScalar):
+                            nextScalar = lastScalar.getParent(length+1)
                     else:
                         nextScalar = None
                     

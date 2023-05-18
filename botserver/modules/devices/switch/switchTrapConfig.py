@@ -25,6 +25,16 @@ hrProcessorLoad = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrProcessorLo
 hrStorageUsed = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrStorageUsed')
 ifLastChange = getOid(mibViewController, 'IF-MIB', 'ifLastChange')
 
+# Triggers descr
+# mteTriggerComment = {
+#     'MachineTooBusy': getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerComment', 'antoine', 'MachineTooBusy'),
+#     'MemoryUsageWarning': getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerComment', 'antoine', 'MemoryUsageWarning'),
+#     'InterfaceStatusUpdate': getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerComment', 'antoine', 'InterfaceStatusUpdate'),
+#     'IncommingTrafficOverload': getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerComment', 'antoine', 'IncommingTrafficOverload'),
+#     'UnusualOutgoingTraffic': getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerComment', 'antoine', 'UnusualOutgoingTraffic'),
+#     'PerformanceIssue': getOid(mibViewController, 'DISMAN-EVENT-MIB', 'mteTriggerComment', 'antoine', 'PerformanceIssue'),
+# }
+
 # Joined objects
 hrSystemProcesses = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrSystemProcesses', 0)
 hrProcessorFrwID = getOid(mibViewController, 'HOST-RESOURCES-MIB', 'hrProcessorFrwID')
@@ -163,9 +173,9 @@ switchTrapConfig = {
             'mteTriggerName': 'IncommingTrafficOverload'
         },
         'columns': {
-            'mteTriggerComment': 'Trigger when the variation incomming number of octets rises.',
+            'mteTriggerComment': 'Trigger when the incomming number of octets rises.',
             'mteTriggerTest': mteTriggerTest['boolean'],
-            'mteTriggerSampleType': 'deltaValue',
+            'mteTriggerSampleType': 'absoluteValue',
             'mteTriggerValueID': ifInOctets,
             'mteTriggerValueIDWildcard': 'true',
             'mteTriggerTargetTag': '',
@@ -184,9 +194,9 @@ switchTrapConfig = {
             'mteTriggerName': 'UnusualOutgoingTraffic'
         },
         'columns': {
-            'mteTriggerComment': 'Trigger when the variation of the outgoing octets cross over given thresholds.',
+            'mteTriggerComment': 'Trigger when the outgoing octets cross over given thresholds.',
             'mteTriggerTest': mteTriggerTest['threshold'],
-            'mteTriggerSampleType': 'deltaValue',
+            'mteTriggerSampleType': 'absoluteValue',
             'mteTriggerValueID': ifOutOctets,
             'mteTriggerValueIDWildcard': 'true',
             'mteTriggerTargetTag': '',
@@ -220,27 +230,6 @@ switchTrapConfig = {
             'mteTriggerEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
         },
     },
-    # {
-    #     'index': {
-    #         'mteOwner': 'antoine',
-    #         'mteTriggerName': 'UnauthorizedAccess'
-    #     },
-    #     'columns': {
-    #         'mteTriggerComment': 'Trigger when a snmp request with bad community name is detected.',
-    #         'mteTriggerTest': mteTriggerTest['existence'],
-    #         'mteTriggerSampleType': 'absoluteValue',
-    #         'mteTriggerValueID': snmpInBadCommunityNames,
-    #         'mteTriggerValueIDWildcard': 'false',
-    #         'mteTriggerTargetTag': '',
-    #         'mteTriggerContextName': '',
-    #         'mteTriggerContextNameWildcard': 'false',
-    #         'mteTriggerFrequency': '5', # in seconds
-    #         'mteTriggerObjectsOwner': 'antoine',
-    #         'mteTriggerObjects': 'intrusionMetrics',
-    #         'mteTriggerEnabled': 'true',
-    #         'mteTriggerEntryStatus': 'createAndWait', # Once dependencies created, set to 'active'
-    #     },
-    # },
 ],
 
 ############################ Configuration for delta sampling ############################
@@ -261,28 +250,6 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteTriggerName': 'InterfaceStatusUpdate'
-        },
-        'columns': {
-            'mteTriggerDeltaDiscontinuityID': sysUpTimeInstance,
-            'mteTriggerDeltaDiscontinuityIDWildcard': 'false',
-            'mteTriggerDeltaDiscontinuityIDType': 'timeTicks',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteTriggerName': 'IncommingTrafficOverload'
-        },
-        'columns': {
-            'mteTriggerDeltaDiscontinuityID': sysUpTimeInstance,
-            'mteTriggerDeltaDiscontinuityIDWildcard': 'false',
-            'mteTriggerDeltaDiscontinuityIDType': 'timeTicks',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteTriggerName': 'UnusualOutgoingTraffic'
         },
         'columns': {
             'mteTriggerDeltaDiscontinuityID': sysUpTimeInstance,
@@ -366,7 +333,7 @@ switchTrapConfig = {
         'columns': {
             'mteTriggerBooleanComparison': 'greaterOrEqual',
             'mteTriggerBooleanValue': '90',
-            'mteTriggerBooleanStartup': 'true',
+            'mteTriggerBooleanStartup': 'false',
             'mteTriggerBooleanObjectsOwner': '',
             'mteTriggerBooleanObjects': '',
             'mteTriggerBooleanEventOwner': 'antoine',
@@ -380,8 +347,8 @@ switchTrapConfig = {
         },
         'columns': {
             'mteTriggerBooleanComparison': 'greaterOrEqual',
-            'mteTriggerBooleanValue': '10',
-            'mteTriggerBooleanStartup': 'true',
+            'mteTriggerBooleanValue': '1000000',
+            'mteTriggerBooleanStartup': 'false',
             'mteTriggerBooleanObjectsOwner': '',
             'mteTriggerBooleanObjects': '',
             'mteTriggerBooleanEventOwner': 'antoine',
@@ -395,8 +362,8 @@ switchTrapConfig = {
         },
         'columns': {
             'mteTriggerBooleanComparison': 'greaterOrEqual',
-            'mteTriggerBooleanValue': '50',
-            'mteTriggerBooleanStartup': 'true',
+            'mteTriggerBooleanValue': '5',
+            'mteTriggerBooleanStartup': 'false',
             'mteTriggerBooleanObjectsOwner': '',
             'mteTriggerBooleanObjects': '',
             'mteTriggerBooleanEventOwner': 'antoine',
@@ -462,11 +429,11 @@ switchTrapConfig = {
             'mteTriggerName': 'UnusualOutgoingTraffic'
         },
         'columns': {
-            'mteTriggerThresholdStartup': 'risingOrFalling',
-            'mteTriggerThresholdRising': '0',
+            'mteTriggerThresholdStartup': 'rising',
+            'mteTriggerThresholdRising': '1000000',
             'mteTriggerThresholdFalling': '0',
-            'mteTriggerThresholdDeltaRising': '100',
-            'mteTriggerThresholdDeltaFalling': '10',
+            'mteTriggerThresholdDeltaRising': '1000000',
+            'mteTriggerThresholdDeltaFalling': '0',
             'mteTriggerThresholdObjectsOwner': '',
             'mteTriggerThresholdObjects': '',
             'mteTriggerThresholdRisingEventOwner': '',
@@ -496,11 +463,23 @@ switchTrapConfig = {
     #         'mteObjectsEntryStatus': 'active'/'notInService'/'notReady'/'createAndGo'/'createAndWait'/'destroy',
     #     },
     # },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteObjectsName': 'processMetrics',
+    #         'mteObjectsIndex': '1'
+    #     },
+    #     'columns': {
+    #         'mteObjectsID': mteTriggerComment['MachineTooBusy'],
+    #         'mteObjectsIDWildcard': 'false',
+    #         'mteObjectsEntryStatus': 'createAndGo',
+    #     },
+    # },
     {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'processMetrics',
-            'mteObjectsIndex': '1'
+            'mteObjectsIndex': '2'
         },
         'columns': {
             'mteObjectsID': hrSystemProcesses,
@@ -512,7 +491,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'processMetrics',
-            'mteObjectsIndex': '2'
+            'mteObjectsIndex': '3'
         },
         'columns': {
             'mteObjectsID': hrProcessorFrwID,
@@ -524,7 +503,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'processMetrics',
-            'mteObjectsIndex': '3'
+            'mteObjectsIndex': '4'
         },
         'columns': {
             'mteObjectsID': hrProcessorLoad,
@@ -532,11 +511,23 @@ switchTrapConfig = {
             'mteObjectsEntryStatus': 'createAndGo',
         },
     },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteObjectsName': 'storageMetrics',
+    #         'mteObjectsIndex': '1'
+    #     },
+    #     'columns': {
+    #         'mteObjectsID': mteTriggerComment['MemoryUsageWarning'],
+    #         'mteObjectsIDWildcard': 'true',
+    #         'mteObjectsEntryStatus': 'createAndGo',
+    #     },
+    # },
     {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'storageMetrics',
-            'mteObjectsIndex': '1'
+            'mteObjectsIndex': '2'
         },
         'columns': {
             'mteObjectsID': hrStorageIndex,
@@ -548,7 +539,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'storageMetrics',
-            'mteObjectsIndex': '2'
+            'mteObjectsIndex': '3'
         },
         'columns': {
             'mteObjectsID': hrStorageDescr,
@@ -560,7 +551,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'storageMetrics',
-            'mteObjectsIndex': '3'
+            'mteObjectsIndex': '4'
         },
         'columns': {
             'mteObjectsID': hrStorageUsed,
@@ -572,7 +563,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'storageMetrics',
-            'mteObjectsIndex': '4'
+            'mteObjectsIndex': '5'
         },
         'columns': {
             'mteObjectsID': hrStorageSize,
@@ -580,11 +571,23 @@ switchTrapConfig = {
             'mteObjectsEntryStatus': 'createAndGo',
         },
     },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteObjectsName': 'interfacesMetrics',
+    #         'mteObjectsIndex': '1'
+    #     },
+    #     'columns': {
+    #         'mteObjectsID': mteTriggerComment['InterfaceStatusUpdate'],
+    #         'mteObjectsIDWildcard': 'true',
+    #         'mteObjectsEntryStatus': 'createAndGo',
+    #     },
+    # },
     {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'interfacesMetrics',
-            'mteObjectsIndex': '1'
+            'mteObjectsIndex': '2'
         },
         'columns': {
             'mteObjectsID': ifIndex,
@@ -596,7 +599,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'interfacesMetrics',
-            'mteObjectsIndex': '2'
+            'mteObjectsIndex': '3'
         },
         'columns': {
             'mteObjectsID': ifOperStatus,
@@ -608,7 +611,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'interfacesMetrics',
-            'mteObjectsIndex': '3'
+            'mteObjectsIndex': '4'
         },
         'columns': {
             'mteObjectsID': ifDescr,
@@ -616,11 +619,23 @@ switchTrapConfig = {
             'mteObjectsEntryStatus': 'createAndGo',
         },
     },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteObjectsName': 'incommingTrafficMetrics',
+    #         'mteObjectsIndex': '1'
+    #     },
+    #     'columns': {
+    #         'mteObjectsID': mteTriggerComment['IncommingTrafficOverload'],
+    #         'mteObjectsIDWildcard': 'true',
+    #         'mteObjectsEntryStatus': 'createAndGo',
+    #     },
+    # },
     {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'incommingTrafficMetrics',
-            'mteObjectsIndex': '1'
+            'mteObjectsIndex': '2'
         },
         'columns': {
             'mteObjectsID': ifIndex,
@@ -632,7 +647,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'incommingTrafficMetrics',
-            'mteObjectsIndex': '2'
+            'mteObjectsIndex': '3'
         },
         'columns': {
             'mteObjectsID': ifInOctets,
@@ -644,7 +659,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'incommingTrafficMetrics',
-            'mteObjectsIndex': '3'
+            'mteObjectsIndex': '4'
         },
         'columns': {
             'mteObjectsID': ifInUcastPkts,
@@ -656,7 +671,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'incommingTrafficMetrics',
-            'mteObjectsIndex': '4'
+            'mteObjectsIndex': '5'
         },
         'columns': {
             'mteObjectsID': ifInNUcastPkts,
@@ -668,7 +683,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'incommingTrafficMetrics',
-            'mteObjectsIndex': '5'
+            'mteObjectsIndex': '6'
         },
         'columns': {
             'mteObjectsID': ifInUnknownProtos,
@@ -676,11 +691,23 @@ switchTrapConfig = {
             'mteObjectsEntryStatus': 'createAndGo',
         },
     },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteObjectsName': 'outgoingTrafficMetrics',
+    #         'mteObjectsIndex': '1'
+    #     },
+    #     'columns': {
+    #         'mteObjectsID': mteTriggerComment['UnusualOutgoingTraffic'],
+    #         'mteObjectsIDWildcard': 'true',
+    #         'mteObjectsEntryStatus': 'createAndGo',
+    #     },
+    # },
     {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'outgoingTrafficMetrics',
-            'mteObjectsIndex': '1'
+            'mteObjectsIndex': '2'
         },
         'columns': {
             'mteObjectsID': ifIndex,
@@ -692,7 +719,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'outgoingTrafficMetrics',
-            'mteObjectsIndex': '2'
+            'mteObjectsIndex': '3'
         },
         'columns': {
             'mteObjectsID': ifOutOctets,
@@ -704,7 +731,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'outgoingTrafficMetrics',
-            'mteObjectsIndex': '3'
+            'mteObjectsIndex': '4'
         },
         'columns': {
             'mteObjectsID': ifOutUcastPkts,
@@ -716,10 +743,34 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'outgoingTrafficMetrics',
-            'mteObjectsIndex': '4'
+            'mteObjectsIndex': '5'
         },
         'columns': {
             'mteObjectsID': ifOutNUcastPkts,
+            'mteObjectsIDWildcard': 'true',
+            'mteObjectsEntryStatus': 'createAndGo',
+        },
+    },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteObjectsName': 'errorsTrafficMetrics',
+    #         'mteObjectsIndex': '1'
+    #     },
+    #     'columns': {
+    #         'mteObjectsID': mteTriggerComment['PerformanceIssue'],
+    #         'mteObjectsIDWildcard': 'true',
+    #         'mteObjectsEntryStatus': 'createAndGo',
+    #     },
+    # },
+    {
+        'index': {
+            'mteOwner': 'antoine',
+            'mteObjectsName': 'errorsTrafficMetrics',
+            'mteObjectsIndex': '2'
+        },
+        'columns': {
+            'mteObjectsID': ifIndex,
             'mteObjectsIDWildcard': 'true',
             'mteObjectsEntryStatus': 'createAndGo',
         },
@@ -728,7 +779,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'errorsTrafficMetrics',
-            'mteObjectsIndex': '1'
+            'mteObjectsIndex': '3'
         },
         'columns': {
             'mteObjectsID': ifInDiscards,
@@ -740,7 +791,7 @@ switchTrapConfig = {
         'index': {
             'mteOwner': 'antoine',
             'mteObjectsName': 'errorsTrafficMetrics',
-            'mteObjectsIndex': '2'
+            'mteObjectsIndex': '4'
         },
         'columns': {
             'mteObjectsID': ifOutDiscards,
@@ -748,114 +799,54 @@ switchTrapConfig = {
             'mteObjectsEntryStatus': 'createAndGo',
         },
     },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteObjectsName': 'errorsTrafficMetrics',
-            'mteObjectsIndex': '3'
-        },
-        'columns': {
-            'mteObjectsID': ipIfStatsInHdrErrors,
-            'mteObjectsIDWildcard': 'true',
-            'mteObjectsEntryStatus': 'createAndGo',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteObjectsName': 'errorsTrafficMetrics',
-            'mteObjectsIndex': '4'
-        },
-        'columns': {
-            'mteObjectsID': ipIfStatsInNoRoutes,
-            'mteObjectsIDWildcard': 'true',
-            'mteObjectsEntryStatus': 'createAndGo',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteObjectsName': 'errorsTrafficMetrics',
-            'mteObjectsIndex': '5'
-        },
-        'columns': {
-            'mteObjectsID': ipIfStatsInAddrErrors,
-            'mteObjectsIDWildcard': 'true',
-            'mteObjectsEntryStatus': 'createAndGo',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteObjectsName': 'errorsTrafficMetrics',
-            'mteObjectsIndex': '6'
-        },
-        'columns': {
-            'mteObjectsID': udpInErrors,
-            'mteObjectsIDWildcard': 'true',
-            'mteObjectsEntryStatus': 'createAndGo',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteObjectsName': 'errorsTrafficMetrics',
-            'mteObjectsIndex': '7'
-        },
-        'columns': {
-            'mteObjectsID': tcpInErrs,
-            'mteObjectsIDWildcard': 'true',
-            'mteObjectsEntryStatus': 'createAndGo',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteObjectsName': 'intrusionMetrics',
-            'mteObjectsIndex': '1'
-        },
-        'columns': {
-            'mteObjectsID': snmpInBadVersions,
-            'mteObjectsIDWildcard': 'true',
-            'mteObjectsEntryStatus': 'createAndGo',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteObjectsName': 'intrusionMetrics',
-            'mteObjectsIndex': '2'
-        },
-        'columns': {
-            'mteObjectsID': snmpInBadCommunityNames,
-            'mteObjectsIDWildcard': 'true',
-            'mteObjectsEntryStatus': 'createAndGo',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteObjectsName': 'intrusionMetrics',
-            'mteObjectsIndex': '3'
-        },
-        'columns': {
-            'mteObjectsID': snmpInBadCommunityUses,
-            'mteObjectsIDWildcard': 'true',
-            'mteObjectsEntryStatus': 'createAndGo',
-        },
-    },
-    {
-        'index': {
-            'mteOwner': 'antoine',
-            'mteObjectsName': 'intrusionMetrics',
-            'mteObjectsIndex': '4'
-        },
-        'columns': {
-            'mteObjectsID': snmpInASNParseErrs,
-            'mteObjectsIDWildcard': 'true',
-            'mteObjectsEntryStatus': 'createAndGo',
-        },
-    },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteObjectsName': 'intrusionMetrics',
+    #         'mteObjectsIndex': '1'
+    #     },
+    #     'columns': {
+    #         'mteObjectsID': snmpInBadVersions,
+    #         'mteObjectsIDWildcard': 'true',
+    #         'mteObjectsEntryStatus': 'createAndGo',
+    #     },
+    # },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteObjectsName': 'intrusionMetrics',
+    #         'mteObjectsIndex': '2'
+    #     },
+    #     'columns': {
+    #         'mteObjectsID': snmpInBadCommunityNames,
+    #         'mteObjectsIDWildcard': 'true',
+    #         'mteObjectsEntryStatus': 'createAndGo',
+    #     },
+    # },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteObjectsName': 'intrusionMetrics',
+    #         'mteObjectsIndex': '3'
+    #     },
+    #     'columns': {
+    #         'mteObjectsID': snmpInBadCommunityUses,
+    #         'mteObjectsIDWildcard': 'true',
+    #         'mteObjectsEntryStatus': 'createAndGo',
+    #     },
+    # },
+    # {
+    #     'index': {
+    #         'mteOwner': 'antoine',
+    #         'mteObjectsName': 'intrusionMetrics',
+    #         'mteObjectsIndex': '4'
+    #     },
+    #     'columns': {
+    #         'mteObjectsID': snmpInASNParseErrs,
+    #         'mteObjectsIDWildcard': 'true',
+    #         'mteObjectsEntryStatus': 'createAndGo',
+    #     },
+    # },
 ],
 
 ################################### Events definition ####################################

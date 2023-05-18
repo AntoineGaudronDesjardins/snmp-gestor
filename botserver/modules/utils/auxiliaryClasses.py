@@ -38,7 +38,7 @@ class Instance:
             scalar = MibNode(snmpEngine, self.oid).get()
             self.multiplicity = 1
             self.oids = [self.oid]
-            self.values = [self.callback(scalar.varBind[1].prettyPrint())]
+            self.values = [self.callback(scalar.value if scalar.ok else 0)]
 
 
 

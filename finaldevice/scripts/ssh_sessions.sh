@@ -1,3 +1,3 @@
 #!/bin/bash
-num_sessions=$(ps aux | grep -c 'ssh ')
+num_sessions=$(netstat | grep -c 'ssh')
 echo $num_sessions
